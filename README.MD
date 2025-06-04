@@ -180,3 +180,9 @@ Questo documento delinea le fasi di sviluppo per l'applicazione Android "Dama AI
 ---
 
 Questo piano è una guida; sentiti libero di adattarlo man mano che procedi e acquisisci nuove conoscenze! In bocca al lupo con lo sviluppo di `damaAI`!
+
+---
+
+## Licenza
+
+Distribuito con licenza [MIT](https://opensource.org/licenses/MIT).
