@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -16,14 +17,22 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.navigation.NavController // <-- NUOVO IMPORT
+import androidx.navigation.compose.NavHost // <-- NUOVO IMPORT
+import androidx.navigation.compose.composable // <-- NUOVO IMPORT
+import androidx.navigation.compose.rememberNavController // <-- NUOVO IMPORT
 import io.github.luposolitario.damaai.data.GameState
 import io.github.luposolitario.damaai.data.Piece
 import io.github.luposolitario.damaai.data.PlayerColor
 import io.github.luposolitario.damaai.ui.theme.DamaAITheme
+import io.github.luposolitario.damaai.utils.formatTime
+import io.github.luposolitario.damaai.utils.isValidMove
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.ArrowBack
 import kotlinx.coroutines.delay
 
 
@@ -32,7 +41,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             DamaAITheme {
-                DamaAIScreen()
+                // --- NUOVO: Chiamiamo il nostro gestore di navigazione ---
+                AppNavigation()
             }
         }
     }
@@ -52,10 +62,13 @@ val initialPieces: List<Piece> = listOf(
 // --- FINE PARTE NUOVA ---
 
 
-// Sostituisci la vecchia DamaAIScreen con questa
+/**
+ * RINOMINATA: DamaAIScreen -> GameScreen per maggiore chiarezza.
+ * Ora accetta un NavController per poter navigare verso altre schermate.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DamaAIScreen() {
+fun GameScreen(navController: NavController) { // <-- NUOVO PARAMETRO
     var gameState by remember {
         mutableStateOf(GameState(pieces = initialPieces))
     }
@@ -73,7 +86,25 @@ fun DamaAIScreen() {
         }
     }
     Scaffold(
-        topBar = { /* ... (invariato) ... */ }
+        topBar = {
+            TopAppBar(
+                title = { Text("damaAI") },
+                // --- NUOVO: Aggiungiamo un pulsante per andare alle impostazioni ---
+                actions = {
+                    IconButton(onClick = {
+                        // Usiamo il navController per navigare alla schermata delle impostazioni
+                        navController.navigate("settings_screen")
+                    }) {
+                        Icon(imageVector = Icons.Default.Settings, contentDescription = "Impostazioni")
+                    }
+                },
+                // --- FINE PARTE NUOVA ---
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            )
+        }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -149,6 +180,36 @@ fun DamaAIScreen() {
                 modifier = Modifier
                     .fillMaxWidth()
             )
+        }
+    }
+}
+
+/**
+ * NUOVA FUNZIONE: Un segnaposto per la nostra futura schermata delle impostazioni
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingsScreen(navController: NavController) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Impostazioni") },
+                navigationIcon = {
+                    // Aggiungiamo un'icona per tornare indietro
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Indietro")
+                    }
+                }
+            )
+        }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("Qui ci saranno le impostazioni!")
         }
     }
 }
@@ -263,46 +324,33 @@ fun ChatInputArea(modifier: Modifier = Modifier) {
 @Composable
 fun DefaultPreview() {
     DamaAITheme {
-        DamaAIScreen()
+        DamaAITheme {
+            // Per l'anteprima, non possiamo passare un vero navController,
+            // ma possiamo simulare la GameScreen.
+            GameScreen(navController = rememberNavController())
+        }
+        AppNavigation()
     }
 }
 
-// Aggiungi questa nuova funzione in fondo al file
 /**
- * Controlla se una mossa è valida secondo le regole di base.
- * Per ora: solo passo singolo in diagonale in avanti su casella vuota.
+ * NUOVA FUNZIONE: Il cuore della nostra navigazione
  */
-private fun isValidMove(
-    piece: Piece,
-    targetRow: Int,
-    targetCol: Int,
-    allPieces: List<Piece>
-): Boolean {
-    // 1. La casella di destinazione deve essere vuota.
-    // .any ritorna true se almeno un elemento della lista soddisfa la condizione.
-    if (allPieces.any { it.row == targetRow && it.col == targetCol }) {
-        return false // C'è già una pedina in quella casella
+@Composable
+fun AppNavigation() {
+    // 1. Crea un NavController: è il "cervello" che gestisce lo stack delle schermate.
+    val navController = rememberNavController()
+
+    // 2. NavHost è il contenitore che mostra la schermata corrente.
+    NavHost(navController = navController, startDestination = "game_screen") {
+        // 3. Definiamo le nostre "rotte" (le schermate)
+        composable(route = "game_screen") {
+            // Quando la rotta è "game_screen", mostra la nostra schermata di gioco.
+            GameScreen(navController = navController)
+        }
+        composable(route = "settings_screen") {
+            // Quando la rotta è "settings_screen", mostra la schermata delle impostazioni.
+            SettingsScreen(navController = navController)
+        }
     }
-
-    // 2. Calcoliamo la differenza di righe e colonne.
-    val rowDiff = targetRow - piece.row
-    val colDiff = kotlin.math.abs(targetCol - piece.col) // Usiamo il valore assoluto
-
-    // 3. La mossa deve essere di una sola casella in diagonale.
-    if (colDiff != 1) {
-        return false
-    }
-
-    // 4. La mossa deve essere in avanti.
-    return when (piece.color) {
-        PlayerColor.WHITE -> rowDiff == -1 // Le pedine BIANCHE si muovono "in su" (la riga diminuisce)
-        PlayerColor.BLACK -> rowDiff == 1  // Le pedine NERE si muovono "in giù" (la riga aumenta)
-    }
-}
-
-// Nuova funzione helper per formattare il tempo
-private fun formatTime(seconds: Long): String {
-    val minutes = seconds / 60
-    val remainingSeconds = seconds % 60
-    return "%02d:%02d".format(minutes, remainingSeconds)
 }
