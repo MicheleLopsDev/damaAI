@@ -5,24 +5,29 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -61,6 +66,45 @@ class MainActivity : ComponentActivity() {
             ) {
                 AppNavigation(settingsViewModel = settingsViewModel)
             }
+        }
+    }
+}
+
+// Aggiungi questa nuova funzione nel file MainActivity.kt
+@Composable
+fun AIOpponentHeader(
+    name: String,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(start = 8.dp, end = 8.dp), // Aggiungiamo un po' di padding laterale
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Usiamo un'icona come segnaposto per l'avatar
+        Image(
+            imageVector = Icons.Default.AccountCircle,
+            contentDescription = "Avatar dell'avversario AI",
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape) // Ritagliamo l'immagine in un cerchio
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+        )
+
+        Spacer(modifier = Modifier.width(12.dp)) // Spazio tra avatar e nome
+
+        Column {
+            Text(
+                text = name,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = "Sta scrivendo...", // Un piccolo tocco di realismo
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
@@ -128,8 +172,8 @@ fun GameScreen(navController: NavController) { // <-- NUOVO PARAMETRO
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalAlignment = Alignment.CenterHorizontally
+
         ) {
             GameBoardArea(
                 gameState = gameState,
@@ -170,6 +214,8 @@ fun GameScreen(navController: NavController) { // <-- NUOVO PARAMETRO
                     .aspectRatio(1f)
             )
 
+            Spacer(modifier = Modifier.height(16.dp))
+
             // Sostituisci il vecchio Composable Text con questa Row
             Row(
                 modifier = Modifier.padding(vertical = 8.dp),
@@ -187,12 +233,21 @@ fun GameScreen(navController: NavController) { // <-- NUOVO PARAMETRO
                     color = MaterialTheme.colorScheme.primary
                 )
             }
-            // ... (il resto della Column è invariato) ...
+
+            Spacer(modifier = Modifier.height(16.dp)) // Aggiungiamo un po' più di spazio
+
+            AIOpponentHeader(name = "Wialiam Sheaskeper")
+
+            Spacer(modifier = Modifier.height(8.dp)) // Aggiungiamo un po' più di spazio
+
             ChatDisplayArea(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(100.dp)
+                    .weight(1f) // Fai in modo che la chat occupi lo spazio rimanente
             )
+
+            Spacer(modifier = Modifier.height(8.dp)) // Aggiungiamo un po' più di spazio
+
             ChatInputArea(
                 modifier = Modifier
                     .fillMaxWidth()
