@@ -1,46 +1,72 @@
-# Piano di Sviluppo: Dama AI 🐴 (Versione con Numerazione)
+# 🐴 damaAI
 
-Questo documento delinea le fasi di sviluppo per l'applicazione Android "Dama AI", un gioco di dama open-source focalizzato sull'apprendimento di Kotlin e Jetpack Compose.
-
-## Obiettivi Principali del Progetto:
-* Creare un gioco di dama funzionante e divertente.
-* Utilizzare Kotlin e Jetpack Compose per l'intero sviluppo.
-* Implementare un'interfaccia utente moderna con Material 3.
-* Offrire opzioni di personalizzazione per pedine e tavola.
-* Fornire un'esperienza educativa per lo sviluppatore.
-* Mantenere l'app leggera e performante.
+Un moderno gioco di Dama (Checkers) open-source per Android, costruito con Kotlin e Jetpack Compose, con un'interfaccia utente personalizzabile e un avversario IA.
 
 ---
 
-**1.0 Fase 1: Struttura UI di Base & Setup Iniziale**
+## 🎯 Informazioni sul Progetto
 
-* **1.1 Configurazione Progetto:**
-    * [ ] 1.1.1 Creare un nuovo progetto Android Studio.
-    * [ ] 1.1.2 Nome app: `damaAI` (configurare in `strings.xml`).
-    * [ ] 1.1.3 Linguaggio: Kotlin.
-    * [ ] 1.1.4 Abilitare Jetpack Compose e dipendenze Material 3.
-    * [ ] 1.1.5 Configurare il tema Material 3 di base (`DamaAITheme` in `ui.theme`).
-* **1.2 Schermata Principale (`MainActivity.kt` -> `DamaAIScreen`):**
-    * [ ] 1.2.1 Utilizzare `Scaffold` di Material 3.
-    * [ ] 1.2.2 Aggiungere una `TopAppBar` con il titolo "damaAI".
-    * [ ] 1.2.3 Creare `Column` principale per disporre gli elementi verticalmente.
-* **1.3 Aree Segnaposto Composable:**
-    * [ ] 1.3.1 `GameBoardArea`: Un `Box` quadrato segnaposto.
-    * [ ] 1.3.2 `ChatDisplayArea`: Un `Box` o `Column` segnaposto.
-    * [ ] 1.3.3 `ChatInputArea`: Un `Row` segnaposto con `TextField` e `Button`.
-* **1.4 Testare Layout di Base:** Verificare che la struttura appaia correttamente.
+`damaAI` è un progetto educativo creato per esplorare lo sviluppo Android moderno. L'obiettivo principale è costruire un gioco di dama completo, divertente e ricco di funzionalità, imparando e applicando le migliori pratiche con Kotlin, Jetpack Compose, Material 3 e pattern architetturali moderni.
 
-**2.0 Fase 2: Rappresentazione Visiva della Tavola e delle Pedine**
+Questo progetto è sviluppato da **Michele Lops (alias luposolitario)**.
 
-* **2.1 `GameBoardArea` - Disegno Tavola:**
-    * [ ] 2.1.1 Implementare la griglia 8x8 della dama (es. usando Compose `Canvas` o `LazyVerticalGrid`).
-    * [ ] 2.1.2 Applicare colori alternati per le caselle.
-* **2.2 `Piece` Composable - Disegno Pedine:**
-    * [ ] 2.2.1 Creare un Composable per rappresentare una singola pedina.
-    * [ ] 2.2.2 Disegno iniziale: cerchi colorati semplici (es. bianchi/neri) usando `Canvas`.
-    * [ ] 2.2.3 Applicare un effetto "leggermente 3D" (es. usando `Modifier.shadow()` o disegnando un'ombra/sfumatura direttamente su `Canvas`).
-* **2.3 Posizionamento Statico Pedine:** Mostrare alcune pedine in
+## ✨ Funzionalità
 
-## Licenza
+Attualmente il progetto è in fase di sviluppo attivo.
 
-Distribuito con licenza [MIT](https://opensource.org/licenses/MIT).
+### Funzionalità Implementate
+* **UI Moderna:** Interfaccia pulita, reattiva e gradevole costruita interamente con Jetpack Compose e Material 3.
+* **Logica di Gioco Base:** Implementate le regole di base della dama, inclusa la gestione dei turni e le mosse semplici.
+* **Gameplay Interattivo:** Selezione e movimento delle pedine fluidi e intuitivi.
+* **Timer di Turno:** Un timer che mostra il tempo trascorso per ogni mossa.
+
+### Funzionalità Pianificate
+* Logica di gioco avanzata (catture, promozione a Dama).
+* Personalizzazione dell'interfaccia (texture per pedine e tavola).
+* Salvataggio e riproduzione delle partite.
+* Schermata delle impostazioni con selezione del tema.
+* ...e molto altro! Consulta la [ROADMAP.md](ROADMAP.md) completa per i dettagli.
+
+## 🛠️ Stack Tecnologico e Architettura
+
+* **Linguaggio:** [Kotlin](https://kotlinlang.org/) (100%)
+* **UI Toolkit:** [Jetpack Compose](https://developer.android.com/jetpack/compose)
+* **Stile:** [Material 3](https://m3.material.io/)
+* **Architettura:** UI state-driven, seguendo i principi dell'architettura Android moderna.
+
+## 🤝 Contribuire
+
+Questo è un progetto open-source a scopo didattico. Contributi, suggerimenti e feedback sono i benvenuti! Sentiti libero di aprire una "issue" o di inviare una "pull request".
+
+## 👨‍💻 Autore
+
+* **Michele Lops (luposolitario)**
+* **Email:** sentieroluminoso@gmail.com
+* **GitHub:** [github.com/luposolitario](https://github.com/luposolitario)
+
+## 📄 Licenza
+
+Questo progetto è rilasciato sotto la Licenza MIT.
+
+---
+MIT License
+
+Copyright (c) 2025 Michele Lops
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
