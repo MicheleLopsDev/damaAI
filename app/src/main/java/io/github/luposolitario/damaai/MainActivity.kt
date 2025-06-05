@@ -324,12 +324,10 @@ fun ChatInputArea(modifier: Modifier = Modifier) {
 @Composable
 fun DefaultPreview() {
     DamaAITheme {
-        DamaAITheme {
-            // Per l'anteprima, non possiamo passare un vero navController,
-            // ma possiamo simulare la GameScreen.
-            GameScreen(navController = rememberNavController())
-        }
-        AppNavigation()
+        // Per l'anteprima, mostriamo direttamente la nostra GameScreen.
+        // Le passiamo un NavController "finto" che non fa nulla,
+        // serve solo per far compilare l'anteprima.
+        GameScreen(navController = rememberNavController())
     }
 }
 
