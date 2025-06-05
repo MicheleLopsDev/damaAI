@@ -44,6 +44,9 @@ import io.github.luposolitario.damaai.utils.isValidMove
 import io.github.luposolitario.damaai.viewmodels.SettingsViewModel
 import io.github.luposolitario.damaai.viewmodels.SettingsViewModelFactory
 import kotlinx.coroutines.delay
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.filled.HelpOutline
+import androidx.compose.material.icons.filled.Info
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -216,18 +219,26 @@ fun GameScreen(navController: NavController) { // <-- NUOVO PARAMETRO
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Sostituisci il vecchio Composable Text con questa Row
+            // Sostituisci la vecchia Row del turno/timer con questa
             Row(
                 modifier = Modifier.padding(vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // --- TESTO DEL TURNO MODIFICATO ---
+                // Usiamo 'when' per decidere quale testo mostrare
+                val turnText = when (gameState.currentPlayer) {
+                    PlayerColor.BLACK -> "Tocca a: Wialiam Sheaskeper" // Turno dell'AI
+                    PlayerColor.WHITE -> "Tocca a te"                   // Turno del giocatore umano
+                }
                 Text(
-                    text = "Tocca a: ${gameState.currentPlayer}",
+                    text = turnText,
                     style = MaterialTheme.typography.titleLarge
                 )
+                // --- FINE MODIFICA ---
+
                 Text(
-                    // Usiamo una funzione per formattare i secondi in MM:SS
+                    // Il timer rimane invariato
                     text = "⏳ ${formatTime(gameState.turnElapsedTimeInSeconds)}",
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.primary
@@ -261,35 +272,23 @@ fun GameScreen(navController: NavController) { // <-- NUOVO PARAMETRO
 @Composable
 fun SettingsScreen(
     navController: NavController,
-    settingsViewModel: SettingsViewModel // <-- NUOVO PARAMETRO
+    settingsViewModel: SettingsViewModel
 ) {
-    // Osserviamo lo stato del tema scuro direttamente dal ViewModel
     val isDarkMode by settingsViewModel.isDarkModeEnabled.collectAsState(initial = isSystemInDarkTheme())
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Impostazioni") },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Indietro")
-                    }
-                }
-            )
-        }
+        topBar = { /* ... (TopAppBar invariata) ... */ }
     ) { paddingValues ->
-        // Usiamo una Column per organizzare le nostre impostazioni
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp)
         ) {
-            // Creiamo una riga per l'impostazione del tema
+            // Riga per la Modalità Scura (invariata)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween, // Spinge gli elementi ai lati
-                modifier = Modifier.fillMaxWidth()
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
             ) {
                 Text(
                     text = "Modalità Scura",
@@ -298,12 +297,50 @@ fun SettingsScreen(
                 Switch(
                     checked = isDarkMode,
                     onCheckedChange = { nuovoValore ->
-                        // Quando l'interruttore cambia, chiamiamo la funzione del ViewModel
-                        // per salvare la nuova preferenza.
                         settingsViewModel.setDarkMode(nuovoValore)
                     }
                 )
             }
+
+            Divider() // Aggiungiamo un divisore
+
+            // --- NUOVA VOCE: AIUTO ---
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { navController.navigate("help_screen") } // Naviga al click
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.HelpOutline,
+                    contentDescription = "Aiuto",
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Text("Aiuto", style = MaterialTheme.typography.bodyLarge)
+            }
+            // --- FINE NUOVA VOCE ---
+
+            Divider()
+
+            // --- NUOVA VOCE: CREDITI ---
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { navController.navigate("credits_screen") } // Naviga al click
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = "Crediti",
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Text("Crediti", style = MaterialTheme.typography.bodyLarge)
+            }
+            // --- FINE NUOVA VOCE ---
         }
     }
 }
@@ -442,6 +479,66 @@ fun AppNavigation(settingsViewModel: SettingsViewModel) { // <-- NUOVO PARAMETRO
                 navController = navController,
                 settingsViewModel = settingsViewModel
             )
+        }
+        // --- NUOVE ROTTE ---
+        composable(route = "help_screen") {
+            HelpScreen(navController = navController)
+        }
+        composable(route = "credits_screen") {
+            CreditsScreen(navController = navController)
+        }
+    }
+}
+
+// Aggiungi queste due nuove funzioni nel file
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HelpScreen(navController: NavController) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Aiuto") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Indietro")
+                    }
+                }
+            )
+        }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("Qui ci saranno le istruzioni del gioco.")
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CreditsScreen(navController: NavController) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Crediti") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Indietro")
+                    }
+                }
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text("damaAI", style = MaterialTheme.typography.headlineMedium)
+            Text("Sviluppata da Michele Lops (luposolitario)", style = MaterialTheme.typography.bodyLarge)
+            Text("sentieroluminoso@gmail.com", style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
