@@ -1,5 +1,6 @@
 package io.github.luposolitario.damaai
 
+// E, se non l'avevi già, l'import per lo stato:
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -7,8 +8,12 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,29 +25,41 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController // <-- NUOVO IMPORT
-import androidx.navigation.compose.NavHost // <-- NUOVO IMPORT
-import androidx.navigation.compose.composable // <-- NUOVO IMPORT
-import androidx.navigation.compose.rememberNavController // <-- NUOVO IMPORT
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import io.github.luposolitario.damaai.data.GameState
 import io.github.luposolitario.damaai.data.Piece
 import io.github.luposolitario.damaai.data.PlayerColor
 import io.github.luposolitario.damaai.ui.theme.DamaAITheme
 import io.github.luposolitario.damaai.utils.formatTime
 import io.github.luposolitario.damaai.utils.isValidMove
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.ArrowBack
+import io.github.luposolitario.damaai.viewmodels.SettingsViewModel
+import io.github.luposolitario.damaai.viewmodels.SettingsViewModelFactory
 import kotlinx.coroutines.delay
-
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            DamaAITheme {
-                // --- NUOVO: Chiamiamo il nostro gestore di navigazione ---
-                AppNavigation()
+            // 1. Recuperiamo l'istanza di DamaAIApplication per accedere al nostro SettingsManager
+            val application = application as DamaAIApplication
+            // 2. Usiamo la factory per creare (o recuperare) il nostro SettingsViewModel
+            val settingsViewModel: SettingsViewModel = viewModel(
+                factory = SettingsViewModelFactory(application.settingsManager)
+            )
+
+            // 3. Usiamo collectAsState per convertire il Flow<Boolean> del ViewModel
+            //    in uno State<Boolean> che Compose può usare per aggiornare la UI.
+            val useDarkTheme by settingsViewModel.isDarkModeEnabled.collectAsState(initial = isSystemInDarkTheme())
+
+            // 4. Passiamo lo stato del tema al nostro Composable principale
+            DamaAITheme(
+                darkTheme = useDarkTheme
+            ) {
+                AppNavigation(settingsViewModel = settingsViewModel)
             }
         }
     }
@@ -184,18 +201,21 @@ fun GameScreen(navController: NavController) { // <-- NUOVO PARAMETRO
     }
 }
 
-/**
- * NUOVA FUNZIONE: Un segnaposto per la nostra futura schermata delle impostazioni
- */
+// Sostituisci la vecchia SettingsScreen con questa
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(navController: NavController) {
+fun SettingsScreen(
+    navController: NavController,
+    settingsViewModel: SettingsViewModel // <-- NUOVO PARAMETRO
+) {
+    // Osserviamo lo stato del tema scuro direttamente dal ViewModel
+    val isDarkMode by settingsViewModel.isDarkModeEnabled.collectAsState(initial = isSystemInDarkTheme())
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Impostazioni") },
                 navigationIcon = {
-                    // Aggiungiamo un'icona per tornare indietro
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Indietro")
                     }
@@ -203,13 +223,32 @@ fun SettingsScreen(navController: NavController) {
             )
         }
     ) { paddingValues ->
-        Box(
+        // Usiamo una Column per organizzare le nostre impostazioni
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues),
-            contentAlignment = Alignment.Center
+                .padding(paddingValues)
+                .padding(16.dp)
         ) {
-            Text("Qui ci saranno le impostazioni!")
+            // Creiamo una riga per l'impostazione del tema
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween, // Spinge gli elementi ai lati
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "Modalità Scura",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Switch(
+                    checked = isDarkMode,
+                    onCheckedChange = { nuovoValore ->
+                        // Quando l'interruttore cambia, chiamiamo la funzione del ViewModel
+                        // per salvare la nuova preferenza.
+                        settingsViewModel.setDarkMode(nuovoValore)
+                    }
+                )
+            }
         }
     }
 }
@@ -332,23 +371,22 @@ fun DefaultPreview() {
 }
 
 /**
- * NUOVA FUNZIONE: Il cuore della nostra navigazione
+ * MODIFICATO: AppNavigation ora accetta il ViewModel per passarlo alle schermate
  */
 @Composable
-fun AppNavigation() {
-    // 1. Crea un NavController: è il "cervello" che gestisce lo stack delle schermate.
+fun AppNavigation(settingsViewModel: SettingsViewModel) { // <-- NUOVO PARAMETRO
     val navController = rememberNavController()
 
-    // 2. NavHost è il contenitore che mostra la schermata corrente.
     NavHost(navController = navController, startDestination = "game_screen") {
-        // 3. Definiamo le nostre "rotte" (le schermate)
         composable(route = "game_screen") {
-            // Quando la rotta è "game_screen", mostra la nostra schermata di gioco.
             GameScreen(navController = navController)
         }
         composable(route = "settings_screen") {
-            // Quando la rotta è "settings_screen", mostra la schermata delle impostazioni.
-            SettingsScreen(navController = navController)
+            // Passiamo l'istanza del ViewModel alla schermata delle impostazioni
+            SettingsScreen(
+                navController = navController,
+                settingsViewModel = settingsViewModel
+            )
         }
     }
 }
