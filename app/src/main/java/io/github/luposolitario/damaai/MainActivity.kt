@@ -554,13 +554,13 @@ fun CustomizationScreen(navController: NavController) {
         factory = SettingsViewModelFactory(application.settingsManager)
     )
 
-    // Osserviamo qual è lo stile attualmente selezionato
+    // Osserviamo qual è l'ID dello stile attualmente selezionato.
     val selectedStyleId by settingsViewModel.playerTeamStyleId.collectAsState()
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Personalizza Pedine") }, // Titolo aggiornato
+                title = { Text("Personalizza Pedine") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Indietro")
@@ -576,7 +576,7 @@ fun CustomizationScreen(navController: NavController) {
                 .fillMaxSize()
                 .padding(paddingValues),
             contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp) // Spazio tra gli elementi
         ) {
             item {
                 Text(
@@ -587,7 +587,7 @@ fun CustomizationScreen(navController: NavController) {
             }
 
             // Creiamo un item per ogni stile disponibile nella nostra lista
-            items(availableTeamStyles) { style ->
+            items(items = availableTeamStyles, key = { it.id }) { style ->
                 // Determiniamo se questo è lo stile attualmente selezionato
                 val isSelected = style.id == selectedStyleId
 
@@ -595,12 +595,13 @@ fun CustomizationScreen(navController: NavController) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .border(
-                            width = 2.dp,
+                            width = 3.dp,
                             // Se l'item è selezionato, mostriamo un bordo colorato, altrimenti trasparente.
                             color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
-                            shape = RoundedCornerShape(8.dp)
+                            shape = RoundedCornerShape(12.dp)
                         )
-                        .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(12.dp)) // Aggiungiamo il clip per rendere il clickable arrotondato
                         .clickable {
                             // Al click, chiamiamo il ViewModel per salvare il nuovo stile
                             settingsViewModel.setPlayerTeamStyle(style.id)
