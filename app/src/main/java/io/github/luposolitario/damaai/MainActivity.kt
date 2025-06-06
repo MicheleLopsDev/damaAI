@@ -47,6 +47,7 @@ import kotlinx.coroutines.delay
 import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Palette
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -304,6 +305,25 @@ fun SettingsScreen(
 
             Divider() // Aggiungiamo un divisore
 
+            // --- NUOVA VOCE: PERSONALIZZA ASPETTO ---
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { navController.navigate("customization_screen") }
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Palette, // Una bella icona a forma di tavolozza
+                    contentDescription = "Personalizza Aspetto",
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Text("Personalizza Aspetto", style = MaterialTheme.typography.bodyLarge)
+            }
+
+            Divider() // Aggiungiamo un divisore
+
             // --- NUOVA VOCE: AIUTO ---
             Row(
                 modifier = Modifier
@@ -487,6 +507,10 @@ fun AppNavigation(settingsViewModel: SettingsViewModel) { // <-- NUOVO PARAMETRO
         composable(route = "credits_screen") {
             CreditsScreen(navController = navController)
         }
+
+        composable(route = "customization_screen") {
+            CustomizationScreen(navController = navController)
+        }
     }
 }
 
@@ -515,6 +539,33 @@ fun HelpScreen(navController: NavController) {
         }
     }
 }
+
+// Aggiungi questa nuova funzione nel file
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CustomizationScreen(navController: NavController) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Personalizza Aspetto") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Indietro")
+                    }
+                }
+            )
+        }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("Qui ci saranno le opzioni di personalizzazione.")
+        }
+    }
+}
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
