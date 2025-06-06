@@ -45,9 +45,15 @@ import io.github.luposolitario.damaai.viewmodels.SettingsViewModel
 import io.github.luposolitario.damaai.viewmodels.SettingsViewModelFactory
 import kotlinx.coroutines.delay
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import io.github.luposolitario.damaai.data.availableTeamStyles
+import androidx.compose.foundation.lazy.items
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -468,9 +474,6 @@ fun ChatInputArea(modifier: Modifier = Modifier) {
     }
 }
 
-
-// ... (Le altre funzioni Composable rimangono invariate) ...
-
 @Preview(showBackground = true)
 @Composable
 fun DefaultPreview() {
@@ -540,15 +543,24 @@ fun HelpScreen(navController: NavController) {
     }
 }
 
-// Aggiungi questa nuova funzione nel file
-
+// Sostituisci la vecchia CustomizationScreen con questa
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CustomizationScreen(navController: NavController) {
+    // Per questa schermata, abbiamo bisogno di accedere al nostro SettingsViewModel.
+    // Lo recuperiamo esattamente come abbiamo fatto nella MainActivity.
+    val application = LocalContext.current.applicationContext as DamaAIApplication
+    val settingsViewModel: SettingsViewModel = viewModel(
+        factory = SettingsViewModelFactory(application.settingsManager)
+    )
+
+    // Osserviamo qual è lo stile attualmente selezionato
+    val selectedStyleId by settingsViewModel.playerTeamStyleId.collectAsState()
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Personalizza Aspetto") },
+                title = { Text("Personalizza Pedine") }, // Titolo aggiornato
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Indietro")
@@ -557,15 +569,59 @@ fun CustomizationScreen(navController: NavController) {
             )
         }
     ) { paddingValues ->
-        Box(
-            modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp),
-            contentAlignment = Alignment.Center
+        // Usiamo una LazyColumn per mostrare la lista di stili.
+        // È più efficiente di una Column se la lista diventa molto lunga.
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text("Qui ci saranno le opzioni di personalizzazione.")
+            item {
+                Text(
+                    text = "Scegli lo stile per le tue pedine:",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
+
+            // Creiamo un item per ogni stile disponibile nella nostra lista
+            items(availableTeamStyles) { style ->
+                // Determiniamo se questo è lo stile attualmente selezionato
+                val isSelected = style.id == selectedStyleId
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(
+                            width = 2.dp,
+                            // Se l'item è selezionato, mostriamo un bordo colorato, altrimenti trasparente.
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
+                        .clickable {
+                            // Al click, chiamiamo il ViewModel per salvare il nuovo stile
+                            settingsViewModel.setPlayerTeamStyle(style.id)
+                        }
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Image(
+                        painter = painterResource(id = style.flagResId),
+                        contentDescription = "Bandiera ${style.nationName}",
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text(text = style.nationName, style = MaterialTheme.typography.bodyLarge)
+                }
+            }
         }
     }
 }
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
