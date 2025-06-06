@@ -4,6 +4,7 @@ package io.github.luposolitario.damaai.data
 
 import androidx.annotation.DrawableRes
 import io.github.luposolitario.damaai.R
+import androidx.compose.ui.graphics.Color
 
 enum class PlayerColor {
     WHITE, BLACK
@@ -43,3 +44,40 @@ val availableTeamStyles = listOf(
     TeamStyle(id = "uk", nationName = "Regno Unito", flagResId = R.drawable.flag_uk),
     TeamStyle(id = "usa", nationName = "Stati Uniti", flagResId = R.drawable.flag_usa)
 )
+
+// Aggiungi questo codice in fondo al file GameModel.kt
+
+
+
+// ... (il codice esistente rimane invariato)
+
+// --- NUOVO: Definiamo gli stili per la scacchiera ---
+
+data class BoardStyle(
+    val id: String,
+    val name: String,
+    val lightSquareColor: Color,
+    val darkSquareColor: Color
+)
+
+val availableBoardStyles = listOf(
+    BoardStyle(
+        id = "wood",
+        name = "Legno",
+        lightSquareColor = Color(0xFFF0D9B5),
+        darkSquareColor = Color(0xFFB58863)
+    ),
+    BoardStyle(
+        id = "marble",
+        name = "Marmo",
+        lightSquareColor = Color(0xFFFFFFFF),
+        darkSquareColor = Color(0xFF9E9E9E)
+    ),
+    BoardStyle(
+        id = "modern",
+        name = "Moderno",
+        lightSquareColor = Color(0xFFE1F5FE), // Azzurro chiaro
+        darkSquareColor = Color(0xFF0277BD)  // Blu scuro
+    )
+)
+// --- FINE PARTE NUOVA ---

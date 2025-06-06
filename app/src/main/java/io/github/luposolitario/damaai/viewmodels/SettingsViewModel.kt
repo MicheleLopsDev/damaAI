@@ -13,33 +13,32 @@ class SettingsViewModel(
     private val settingsManager: SettingsManager
 ) : ViewModel() {
 
-    // StateFlow per il tema scuro (invariato)
+    // --- Gestione Tema Scuro (invariata) ---
     val isDarkModeEnabled: StateFlow<Boolean> = settingsManager.isDarkModeEnabledFlow
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = false
-        )
-
-    // Funzione per il tema scuro (invariata)
+        .stateIn(scope = viewModelScope, started = SharingStarted.WhileSubscribed(5000), initialValue = false)
     fun setDarkMode(isEnabled: Boolean) {
-        viewModelScope.launch {
-            settingsManager.setDarkMode(isEnabled)
-        }
+        viewModelScope.launch { settingsManager.setDarkMode(isEnabled) }
     }
 
-    // --- NUOVO: StateFlow per leggere lo stile scelto ---
+    // --- Gestione Stile Pedine (invariata) ---
     val playerTeamStyleId: StateFlow<String> = settingsManager.playerTeamStyleIdFlow
+        .stateIn(scope = viewModelScope, started = SharingStarted.WhileSubscribed(5000), initialValue = "default")
+    fun setPlayerTeamStyle(styleId: String) {
+        viewModelScope.launch { settingsManager.setPlayerTeamStyle(styleId) }
+    }
+
+    // --- NUOVO: StateFlow per leggere lo stile della scacchiera ---
+    val boardStyleId: StateFlow<String> = settingsManager.boardStyleIdFlow
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = "default" // Valore di partenza
+            initialValue = "wood" // Valore di partenza
         )
 
-    // --- NUOVO: Funzione per salvare lo stile scelto ---
-    fun setPlayerTeamStyle(styleId: String) {
+    // --- NUOVO: Funzione per salvare lo stile della scacchiera ---
+    fun setBoardStyle(styleId: String) {
         viewModelScope.launch {
-            settingsManager.setPlayerTeamStyle(styleId)
+            settingsManager.setBoardStyle(styleId)
         }
     }
 }
