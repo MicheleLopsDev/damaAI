@@ -53,8 +53,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import io.github.luposolitario.damaai.data.availableTeamStyles
 import androidx.compose.foundation.lazy.items
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.translate
 import io.github.luposolitario.damaai.data.TeamStyle
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.painter.Painter
 
 
 class MainActivity : ComponentActivity() {
@@ -376,7 +380,7 @@ fun SettingsScreen(
     }
 }
 
-// Sostituisci la tua funzione GameBoardArea con questa versione corretta
+// SOSTITUISCI il blocco da riga 208 a riga 286 con questo codice:
 @Composable
 fun GameBoardArea(
     gameState: GameState,
@@ -384,10 +388,13 @@ fun GameBoardArea(
     onSquareClick: (row: Int, col: Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // --- CORREZIONE: Carichiamo il "pennello" (Painter) per la bandiera qui ---
-    // Le funzioni @Composable come painterResource possono essere chiamate solo qui,
-    // fuori dal blocco di disegno di Canvas.
-    val playerPainter = painterResource(id = playerTeamStyle.flagResId)
+    // Decidiamo quale "pennello" (Painter) usare UNA SOLA VOLTA, prima di entrare nella Canvas.
+    // La variabile sarà nullable (Painter?) perché per lo stile classico non ci serve.
+    val playerPainter: Painter? = if (playerTeamStyle.id != "default") {
+        painterResource(id = playerTeamStyle.flagResId)
+    } else {
+        null // Per lo stile "Classico", non carichiamo nessuna immagine.
+    }
 
     Canvas(
         modifier = modifier.pointerInput(Unit) { detectTapGestures { offset ->
@@ -398,7 +405,7 @@ fun GameBoardArea(
         } }
     ) {
         val squareSize = size.width / 8f
-        // ... (disegno della scacchiera invariato) ...
+        // Disegno della scacchiera (invariato)
         for (row in 0 until 8) {
             for (col in 0 until 8) {
                 val isLightSquare = (row + col) % 2 == 0
@@ -413,7 +420,7 @@ fun GameBoardArea(
 
         gameState.pieces.forEach { piece ->
             if (piece == gameState.selectedPiece) {
-                // ... (disegno dell'evidenziazione invariato) ...
+                // Disegno dell'evidenziazione (invariato)
                 drawCircle(
                     color = Color.Yellow.copy(alpha = 0.5f),
                     radius = squareSize / 2,
@@ -421,49 +428,40 @@ fun GameBoardArea(
                 )
             }
 
-            val center = Offset(
-                x = piece.col * squareSize + squareSize / 2,
-                y = piece.row * squareSize + squareSize / 2
-            )
+            val center = Offset(x = piece.col * squareSize + squareSize / 2, y = piece.row * squareSize + squareSize / 2)
             val pieceRadius = squareSize * 0.38f
 
             // Disegniamo l'ombra (invariato)
-            drawCircle(
-                color = Color.Black.copy(alpha = 0.3f),
-                radius = pieceRadius,
-                center = center.copy(y = center.y + 4f)
-            )
+            drawCircle(color = Color.Black.copy(alpha = 0.3f), radius = pieceRadius, center = center.copy(y = center.y + 4f))
 
             if (piece.color == PlayerColor.WHITE) {
-                // --- CORREZIONE: Usiamo il painter che abbiamo già caricato ---
-                translate(
-                    left = center.x - pieceRadius,
-                    top = center.y - pieceRadius
-                ) {
-                    // Usiamo l'oggetto painter, che non è un Composable
-                    with(playerPainter) {
-                        draw(
-                            size = Size(pieceRadius * 2, pieceRadius * 2)
-                        )
+                // --- NUOVA LOGICA CONDIZIONALE ---
+                // Se abbiamo un painter (cioè NON è stato scelto lo stile "default")
+                if (playerPainter != null) {
+                    // Disegniamo la pedina con la bandiera
+                    drawCircle(color = Color.White, radius = pieceRadius, center = center) // Base bianca
+                    val clipPath = Path().apply { addOval(Rect(center = center, radius = pieceRadius)) }
+                    clipPath(path = clipPath) {
+                        translate(left = center.x - pieceRadius, top = center.y - pieceRadius) {
+                            with(playerPainter) { draw(size = Size(pieceRadius * 2, pieceRadius * 2)) }
+                        }
                     }
+                    drawCircle(color = Color(0xFFBBBBBB), radius = pieceRadius, center = center, style = Stroke(width = squareSize * 0.04f)) // Bordo
+                } else {
+                    // Altrimenti, disegniamo la pedina bianca classica
+                    drawCircle(color = Color.White, radius = pieceRadius, center = center)
+                    drawCircle(color = Color(0xFFBBBBBB), radius = pieceRadius, center = center, style = Stroke(width = squareSize * 0.04f))
                 }
             } else {
                 // Disegno pedina classica per l'AI (invariato)
-                drawCircle(
-                    color = Color(0xFF222222),
-                    radius = pieceRadius,
-                    center = center
-                )
-                drawCircle(
-                    color = Color.Black,
-                    radius = pieceRadius,
-                    center = center,
-                    style = Stroke(width = squareSize * 0.04f)
-                )
+                drawCircle(color = Color(0xFF222222), radius = pieceRadius, center = center)
+                drawCircle(color = Color.Black, radius = pieceRadius, center = center, style = Stroke(width = squareSize * 0.04f))
             }
         }
     }
 }
+
+// FINE SOSTITUZIONE
 /**
  * 1.3.2: Segnaposto per l'Area Visualizzazione Chat (invariato)
  */
