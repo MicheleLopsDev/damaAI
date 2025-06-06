@@ -53,6 +53,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import io.github.luposolitario.damaai.data.availableTeamStyles
 import androidx.compose.foundation.lazy.items
+import androidx.compose.ui.graphics.drawscope.translate
+import io.github.luposolitario.damaai.data.TeamStyle
 
 
 class MainActivity : ComponentActivity() {
@@ -139,7 +141,10 @@ val initialPieces: List<Piece> = listOf(
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GameScreen(navController: NavController) { // <-- NUOVO PARAMETRO
+fun GameScreen(
+    navController: NavController,
+    playerTeamStyle: TeamStyle // <-- NUOVO PARAMETRO
+) { // <-- NUOVO PARAMETRO
     var gameState by remember {
         mutableStateOf(GameState(pieces = initialPieces))
     }
@@ -187,7 +192,7 @@ fun GameScreen(navController: NavController) { // <-- NUOVO PARAMETRO
         ) {
             GameBoardArea(
                 gameState = gameState,
-                // --- QUESTA È LA LOGICA COMPLETAMENTE AGGIORNATA ---
+                playerTeamStyle = playerTeamStyle, // <-- NUOVO PARAMETRO PASSATO
                 onSquareClick = { row, col ->
                     val selected = gameState.selectedPiece
 
@@ -371,34 +376,31 @@ fun SettingsScreen(
     }
 }
 
-// Sostituisci la vecchia GameBoardArea con questa
+// Sostituisci la tua funzione GameBoardArea con questa versione corretta
 @Composable
 fun GameBoardArea(
     gameState: GameState,
-    onSquareClick: (row: Int, col: Int) -> Unit, // <-- NUOVO PARAMETRO LAMBDA
+    playerTeamStyle: TeamStyle,
+    onSquareClick: (row: Int, col: Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // --- CORREZIONE: Carichiamo il "pennello" (Painter) per la bandiera qui ---
+    // Le funzioni @Composable come painterResource possono essere chiamate solo qui,
+    // fuori dal blocco di disegno di Canvas.
+    val playerPainter = painterResource(id = playerTeamStyle.flagResId)
+
     Canvas(
-        modifier = modifier
-            // --- NUOVO: Rileviamo il tocco dell'utente ---
-            .pointerInput(Unit) {
-                detectTapGestures { offset ->
-                    val squareSize = size.width / 8f
-                    // Convertiamo le coordinate del tocco (offset) in riga e colonna
-                    val row = (offset.y / squareSize).toInt()
-                    val col = (offset.x / squareSize).toInt()
-                    // Notifichiamo il click al componente genitore
-                    onSquareClick(row, col)
-                }
-            }
-        // --- FINE NUOVA PARTE ---
+        modifier = modifier.pointerInput(Unit) { detectTapGestures { offset ->
+            val squareSize = size.width / 8f
+            val row = (offset.y / squareSize).toInt().coerceIn(0, 7)
+            val col = (offset.x / squareSize).toInt().coerceIn(0, 7)
+            onSquareClick(row, col)
+        } }
     ) {
         val squareSize = size.width / 8f
-
-        // Disegno scacchiera (invariato)
+        // ... (disegno della scacchiera invariato) ...
         for (row in 0 until 8) {
             for (col in 0 until 8) {
-                // ... (codice disegno scacchiera è identico) ...
                 val isLightSquare = (row + col) % 2 == 0
                 val squareColor = if (isLightSquare) Color(0xFFF0D9B5) else Color(0xFFB58863)
                 drawRect(
@@ -409,30 +411,56 @@ fun GameBoardArea(
             }
         }
 
-        // Disegno pedine (con modifica per l'evidenziazione)
         gameState.pieces.forEach { piece ->
-            // --- NUOVO: Disegniamo l'evidenziazione se la pedina è selezionata ---
             if (piece == gameState.selectedPiece) {
+                // ... (disegno dell'evidenziazione invariato) ...
                 drawCircle(
-                    color = Color.Yellow.copy(alpha = 0.5f), // Colore dell'evidenziazione
-                    radius = squareSize / 2, // Grande quanto la casella
-                    center = Offset(
-                        x = piece.col * squareSize + squareSize / 2,
-                        y = piece.row * squareSize + squareSize / 2
-                    )
+                    color = Color.Yellow.copy(alpha = 0.5f),
+                    radius = squareSize / 2,
+                    center = Offset(x = piece.col * squareSize + squareSize / 2, y = piece.row * squareSize + squareSize / 2)
                 )
             }
-            // --- FINE NUOVA PARTE ---
 
-            // ... (il codice per disegnare le pedine e la loro ombra rimane identico a prima) ...
-            val pieceRadius = squareSize * 0.38f
             val center = Offset(
                 x = piece.col * squareSize + squareSize / 2,
                 y = piece.row * squareSize + squareSize / 2
             )
-            drawCircle(color = Color.Black.copy(alpha = 0.3f), radius = pieceRadius, center = center.copy(y = center.y + 4f))
-            drawCircle(color = if (piece.color == PlayerColor.WHITE) Color(0xFFFFFFFF) else Color(0xFF222222), radius = pieceRadius, center = center)
-            drawCircle(color = if (piece.color == PlayerColor.WHITE) Color(0xFFBBBBBB) else Color.Black, radius = pieceRadius, center = center, style = Stroke(width = squareSize * 0.04f))
+            val pieceRadius = squareSize * 0.38f
+
+            // Disegniamo l'ombra (invariato)
+            drawCircle(
+                color = Color.Black.copy(alpha = 0.3f),
+                radius = pieceRadius,
+                center = center.copy(y = center.y + 4f)
+            )
+
+            if (piece.color == PlayerColor.WHITE) {
+                // --- CORREZIONE: Usiamo il painter che abbiamo già caricato ---
+                translate(
+                    left = center.x - pieceRadius,
+                    top = center.y - pieceRadius
+                ) {
+                    // Usiamo l'oggetto painter, che non è un Composable
+                    with(playerPainter) {
+                        draw(
+                            size = Size(pieceRadius * 2, pieceRadius * 2)
+                        )
+                    }
+                }
+            } else {
+                // Disegno pedina classica per l'AI (invariato)
+                drawCircle(
+                    color = Color(0xFF222222),
+                    radius = pieceRadius,
+                    center = center
+                )
+                drawCircle(
+                    color = Color.Black,
+                    radius = pieceRadius,
+                    center = center,
+                    style = Stroke(width = squareSize * 0.04f)
+                )
+            }
         }
     }
 }
@@ -481,23 +509,33 @@ fun DefaultPreview() {
         // Per l'anteprima, mostriamo direttamente la nostra GameScreen.
         // Le passiamo un NavController "finto" che non fa nulla,
         // serve solo per far compilare l'anteprima.
-        GameScreen(navController = rememberNavController())
+        GameScreen(
+            navController = rememberNavController(),
+            playerTeamStyle = availableTeamStyles.first() // <-- MODIFICA QUI
+        )
     }
 }
 
-/**
- * MODIFICATO: AppNavigation ora accetta il ViewModel per passarlo alle schermate
- */
 @Composable
-fun AppNavigation(settingsViewModel: SettingsViewModel) { // <-- NUOVO PARAMETRO
+fun AppNavigation(settingsViewModel: SettingsViewModel) {
     val navController = rememberNavController()
+
+    // --- NUOVO: Leggiamo qui lo stile scelto dal giocatore ---
+    val playerStyleId by settingsViewModel.playerTeamStyleId.collectAsState()
+    // Troviamo l'oggetto TeamStyle corrispondente all'ID salvato.
+    // Se non lo trova (improbabile), usa il primo della lista come default.
+    val playerTeamStyle = availableTeamStyles.find { it.id == playerStyleId } ?: availableTeamStyles.first()
+    // --- FINE PARTE NUOVA ---
 
     NavHost(navController = navController, startDestination = "game_screen") {
         composable(route = "game_screen") {
-            GameScreen(navController = navController)
+            // Passiamo lo stile scelto alla schermata di gioco
+            GameScreen(
+                navController = navController,
+                playerTeamStyle = playerTeamStyle // <-- NUOVO PARAMETRO PASSATO
+            )
         }
         composable(route = "settings_screen") {
-            // Passiamo l'istanza del ViewModel alla schermata delle impostazioni
             SettingsScreen(
                 navController = navController,
                 settingsViewModel = settingsViewModel
