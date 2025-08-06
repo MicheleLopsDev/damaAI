@@ -90,7 +90,7 @@ class ModelDownloadWorker(private val context: Context, params: WorkerParameters
 
             val totalDownloaded = AtomicLong(0)
             val jobs = mutableListOf<Deferred<Unit>>()
-            val numThreads = 4 // Parallelizziamo in 4 parti
+            val numThreads = 12 // Parallelizziamo in 4 parti
 
             val partSize = totalSize / numThreads
             for (i in 0 until numThreads) {
