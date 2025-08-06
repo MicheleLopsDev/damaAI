@@ -1,7 +1,14 @@
 package io.github.luposolitario.damaai
 
+import android.app.Activity
+import android.graphics.Bitmap
+import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
+import android.view.PixelCopy
+import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Canvas
@@ -33,11 +40,15 @@ import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.toSize
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
@@ -50,6 +61,7 @@ import io.github.luposolitario.damaai.utils.isValidMove
 import io.github.luposolitario.damaai.viewmodels.SettingsViewModel
 import io.github.luposolitario.damaai.viewmodels.SettingsViewModelFactory
 import kotlinx.coroutines.delay
+
 
 val initialPieces: List<Piece> = listOf(
     Piece(0, 1, PlayerColor.BLACK), Piece(0, 3, PlayerColor.BLACK), Piece(0, 5, PlayerColor.BLACK), Piece(0, 7, PlayerColor.BLACK),
@@ -119,6 +131,8 @@ fun GameScreen(
     boardStyle: BoardStyle
 ) {
     var gameState by remember { mutableStateOf(GameState(pieces = initialPieces)) }
+    var boardCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    val view = LocalView.current
 
     LaunchedEffect(key1 = gameState.currentPlayer) {
         while (true) {
@@ -133,7 +147,24 @@ fun GameScreen(
                 title = { Text("damaAI") },
                 actions = {
                     IconButton(onClick = {
-                        Log.d("NAV_TEST", "Pulsante impostazioni cliccato! Navigo a 'settings_screen'.")
+                        boardCoordinates?.let { coords ->
+                            // --- CORREZIONE: Calcoliamo il rettangolo usando le API corrette ---
+                            val rectInWindow = Rect(
+                                offset = coords.positionInWindow(),
+                                size = coords.size.toSize()
+                            )
+                            captureViewAsBitmap(view, rectInWindow) { bitmap ->
+                                if (bitmap != null) {
+                                    Log.d("Capture", "Bitmap catturato con successo! ${bitmap.width}x${bitmap.height}")
+                                } else {
+                                    Log.e("Capture", "Impossibile catturare il bitmap.")
+                                }
+                            }
+                        }
+                    }) {
+                        Icon(Icons.Default.PhotoCamera, contentDescription = "Cattura Scacchiera")
+                    }
+                    IconButton(onClick = {
                         navController.navigate("settings_screen")
                     }) {
                         Icon(Icons.Default.Settings, contentDescription = "Impostazioni")
@@ -153,37 +184,44 @@ fun GameScreen(
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            GameBoardArea(
-                gameState = gameState,
-                playerTeamStyle = playerTeamStyle,
-                boardStyle = boardStyle,
-                onSquareClick = { row, col ->
-                    val selected = gameState.selectedPiece
-                    if (selected != null) {
-                        if (isValidMove(selected, row, col, gameState.pieces)) {
-                            val newPieces = gameState.pieces.map {
-                                if (it == selected) it.copy(row = row, col = col) else it
-                            }
-                            gameState = gameState.copy(
-                                pieces = newPieces,
-                                selectedPiece = null,
-                                currentPlayer = if (gameState.currentPlayer == PlayerColor.WHITE) PlayerColor.BLACK else PlayerColor.WHITE,
-                                turnElapsedTimeInSeconds = 0L
-                            )
-                        } else {
-                            gameState = gameState.copy(selectedPiece = null)
-                        }
-                    } else {
-                        val clickedPiece = gameState.pieces.find { it.row == row && it.col == col }
-                        if (clickedPiece != null && clickedPiece.color == gameState.currentPlayer) {
-                            gameState = gameState.copy(selectedPiece = clickedPiece)
-                        }
-                    }
-                },
+            Box(
                 modifier = Modifier
                     .fillMaxWidth(0.95f)
                     .aspectRatio(1f)
-            )
+                    .onGloballyPositioned { coordinates ->
+                        boardCoordinates = coordinates
+                    }
+            ) {
+                GameBoardArea(
+                    gameState = gameState,
+                    playerTeamStyle = playerTeamStyle,
+                    boardStyle = boardStyle,
+                    onSquareClick = { row, col ->
+                        val selected = gameState.selectedPiece
+                        if (selected != null) {
+                            if (isValidMove(selected, row, col, gameState.pieces)) {
+                                val newPieces = gameState.pieces.map {
+                                    if (it == selected) it.copy(row = row, col = col) else it
+                                }
+                                gameState = gameState.copy(
+                                    pieces = newPieces,
+                                    selectedPiece = null,
+                                    currentPlayer = if (gameState.currentPlayer == PlayerColor.WHITE) PlayerColor.BLACK else PlayerColor.WHITE,
+                                    turnElapsedTimeInSeconds = 0L
+                                )
+                            } else {
+                                gameState = gameState.copy(selectedPiece = null)
+                            }
+                        } else {
+                            val clickedPiece = gameState.pieces.find { it.row == row && it.col == col }
+                            if (clickedPiece != null && clickedPiece.color == gameState.currentPlayer) {
+                                gameState = gameState.copy(selectedPiece = clickedPiece)
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
 
             Spacer(Modifier.height(16.dp))
 
@@ -210,6 +248,35 @@ fun GameScreen(
             ChatDisplayArea(modifier = Modifier.fillMaxWidth().weight(1f))
             ChatInputArea(modifier = Modifier.fillMaxWidth())
         }
+    }
+}
+
+// --- CORREZIONE: Modificata la firma e la logica interna ---
+fun captureViewAsBitmap(view: View, bounds: Rect, onBitmap: (Bitmap?) -> Unit) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        val bitmap = Bitmap.createBitmap(bounds.width.toInt(), bounds.height.toInt(), Bitmap.Config.ARGB_8888)
+        val rect = android.graphics.Rect(
+            bounds.left.toInt(),
+            bounds.top.toInt(),
+            bounds.right.toInt(),
+            bounds.bottom.toInt()
+        )
+
+        PixelCopy.request(
+            (view.context as Activity).window,
+            rect,
+            bitmap,
+            { result ->
+                if (result == PixelCopy.SUCCESS) {
+                    onBitmap(bitmap)
+                } else {
+                    onBitmap(null)
+                }
+            },
+            Handler(Looper.getMainLooper())
+        )
+    } else {
+        onBitmap(null)
     }
 }
 
@@ -474,7 +541,7 @@ fun CreditsScreen(navController: NavController) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CustomizationScreen(navController: NavController) {
-    val application = LocalContext.current.applicationContext as DamaAIApplication
+    val application = (LocalView.current.context.applicationContext as DamaAIApplication)
     val settingsViewModel: SettingsViewModel = viewModel(
         factory = SettingsViewModelFactory(application.settingsManager)
     )

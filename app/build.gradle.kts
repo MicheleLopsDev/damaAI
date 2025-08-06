@@ -71,6 +71,8 @@ dependencies {
 
     // Per l'inferenza On-Device con MediaPipe
     implementation(libs.tasks.genai)
+    implementation(libs.tasks.vision)
+
 
     // Aggiungiamo una libreria per fare richieste HTTP nel worker
     implementation(libs.okhttp)
