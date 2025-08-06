@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("com.google.protobuf") version "0.9.5"
 }
 
 android {
@@ -61,4 +62,31 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
+    // Per Proto DataStore
+    implementation(libs.androidx.datastore)
+    implementation(libs.protobuf.javalite)
+
+    // Per WorkManager
+    implementation(libs.androidx.work.runtime.ktx)
+
+    // Per l'inferenza On-Device con MediaPipe
+    implementation(libs.tasks.genai)
+
+    // Aggiungiamo una libreria per fare richieste HTTP nel worker
+    implementation(libs.okhttp)
+
+}
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:4.31.1"
+    }
+    generateProtoTasks {
+        all().forEach { task ->
+            task.builtins {
+                create("java") {
+                    option("lite")
+                }
+            }
+        }
+    }
 }
