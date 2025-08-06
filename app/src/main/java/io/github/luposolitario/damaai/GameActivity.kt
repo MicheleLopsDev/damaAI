@@ -43,24 +43,30 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import io.github.luposolitario.damaai.data.*
+import io.github.luposolitario.damaai.engine.GemmaEngine
 import io.github.luposolitario.damaai.ui.theme.DamaAITheme
 import io.github.luposolitario.damaai.utils.formatTime
 import io.github.luposolitario.damaai.utils.isValidMove
 import io.github.luposolitario.damaai.viewmodels.SettingsViewModel
 import io.github.luposolitario.damaai.viewmodels.SettingsViewModelFactory
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
+import java.io.File
 
 
 val initialPieces: List<Piece> = listOf(
@@ -133,6 +139,31 @@ fun GameScreen(
     var gameState by remember { mutableStateOf(GameState(pieces = initialPieces)) }
     var boardCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
     val view = LocalView.current
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
+    // --- NUOVO: Istanza del motore e gestione del suo ciclo di vita ---
+    val gemmaEngine = remember { GemmaEngine() }
+
+    LaunchedEffect(Unit) {
+        // Carica il modello quando il Composable entra nella composizione
+        try {
+            val modelFile = File(context.filesDir, "gemma-3n-E4B-it-int4.task")
+            gemmaEngine.load(context, modelFile.absolutePath)
+        } catch (e: Exception) {
+            Log.e("GameScreen", "Errore durante il caricamento del modello IA: ${e.message}")
+            // Potresti mostrare un messaggio all'utente qui
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            // Rilascia le risorse quando il Composable viene rimosso
+            coroutineScope.launch {
+                gemmaEngine.unload()
+            }
+        }
+    }
 
     LaunchedEffect(key1 = gameState.currentPlayer) {
         while (true) {
@@ -148,21 +179,31 @@ fun GameScreen(
                 actions = {
                     IconButton(onClick = {
                         boardCoordinates?.let { coords ->
-                            // --- CORREZIONE: Calcoliamo il rettangolo usando le API corrette ---
                             val rectInWindow = Rect(
                                 offset = coords.positionInWindow(),
                                 size = coords.size.toSize()
                             )
                             captureViewAsBitmap(view, rectInWindow) { bitmap ->
                                 if (bitmap != null) {
-                                    Log.d("Capture", "Bitmap catturato con successo! ${bitmap.width}x${bitmap.height}")
+                                    Log.d("Capture", "Bitmap catturato. Avvio inferenza...")
+                                    // --- NUOVO: Chiama il motore con il bitmap ---
+                                    val testPrompt = "Sei un esperto di dama. Analizza l'immagine e descrivi cosa vedi."
+                                    coroutineScope.launch {
+                                        val fullResponse = StringBuilder()
+                                        gemmaEngine.generateMove(testPrompt, bitmap)
+                                            .collect { responseChunk ->
+                                                fullResponse.append(responseChunk)
+                                                Log.d("GemmaEngine", "Chunk ricevuto: $responseChunk")
+                                            }
+                                        Log.d("GemmaEngine", "Risposta completa: $fullResponse")
+                                    }
                                 } else {
                                     Log.e("Capture", "Impossibile catturare il bitmap.")
                                 }
                             }
                         }
                     }) {
-                        Icon(Icons.Default.PhotoCamera, contentDescription = "Cattura Scacchiera")
+                        Icon(Icons.Default.PhotoCamera, contentDescription = "Cattura Scacchiera e Testa IA")
                     }
                     IconButton(onClick = {
                         navController.navigate("settings_screen")
@@ -251,7 +292,6 @@ fun GameScreen(
     }
 }
 
-// --- CORREZIONE: Modificata la firma e la logica interna ---
 fun captureViewAsBitmap(view: View, bounds: Rect, onBitmap: (Bitmap?) -> Unit) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         val bitmap = Bitmap.createBitmap(bounds.width.toInt(), bounds.height.toInt(), Bitmap.Config.ARGB_8888)
