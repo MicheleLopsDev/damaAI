@@ -208,66 +208,72 @@ fun GameScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp),
+                .padding(horizontal = 8.dp, vertical = 16.dp), // Leggera modifica al padding
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Box(
+            // Contenitore per la scacchiera e le etichette
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth(0.95f)
-                    .aspectRatio(1f)
-                    .onGloballyPositioned { coordinates ->
-                        boardCoordinates = coordinates
-                    }
+                    .fillMaxWidth()
+                    .weight(1f), // Assegna più spazio possibile alla scacchiera
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                GameBoardArea(
-                    gameState = gameState,
-                    playerTeamStyle = playerTeamStyle,
-                    boardStyle = boardStyle,
-                    onSquareClick = { row, col ->
-                        val selected = gameState.selectedPiece
-                        if (selected != null) {
-                            if (isValidMove(selected, row, col, gameState.pieces)) {
-                                val newPieces = gameState.pieces.map {
-                                    if (it == selected) it.copy(row = row, col = col) else it
+                BoardFiles() // Lettere in alto
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    BoardRanks(modifier = Modifier.width(24.dp)) // Numeri a sinistra
+
+                    Box(
+                        modifier = Modifier
+                            .weight(1f) // La scacchiera occupa lo spazio rimanente
+                            .aspectRatio(1f)
+                            .onGloballyPositioned { coordinates ->
+                                boardCoordinates = coordinates
+                            }
+                    ) {
+                        GameBoardArea(
+                            gameState = gameState,
+                            playerTeamStyle = playerTeamStyle,
+                            boardStyle = boardStyle,
+                            onSquareClick = { row, col ->
+                                val selected = gameState.selectedPiece
+                                if (selected != null) {
+                                    if (isValidMove(selected, row, col, gameState.pieces)) {
+                                        val newPieces = gameState.pieces.map {
+                                            if (it == selected) it.copy(row = row, col = col) else it
+                                        }
+                                        gameState = gameState.copy(
+                                            pieces = newPieces,
+                                            selectedPiece = null,
+                                            currentPlayer = if (gameState.currentPlayer == PlayerColor.WHITE) PlayerColor.BLACK else PlayerColor.WHITE,
+                                            turnElapsedTimeInSeconds = 0L
+                                        )
+                                    } else {
+                                        gameState = gameState.copy(selectedPiece = null)
+                                    }
+                                } else {
+                                    val clickedPiece =
+                                        gameState.pieces.find { it.row == row && it.col == col }
+                                    if (clickedPiece != null && clickedPiece.color == gameState.currentPlayer) {
+                                        gameState = gameState.copy(selectedPiece = clickedPiece)
+                                    }
                                 }
-                                gameState = gameState.copy(
-                                    pieces = newPieces,
-                                    selectedPiece = null,
-                                    currentPlayer = if (gameState.currentPlayer == PlayerColor.WHITE) PlayerColor.BLACK else PlayerColor.WHITE,
-                                    turnElapsedTimeInSeconds = 0L
-                                )
-                            } else {
-                                gameState = gameState.copy(selectedPiece = null)
-                            }
-                        } else {
-                            val clickedPiece =
-                                gameState.pieces.find { it.row == row && it.col == col }
-                            if (clickedPiece != null && clickedPiece.color == gameState.currentPlayer) {
-                                gameState = gameState.copy(selectedPiece = clickedPiece)
-                            }
-                        }
-                    },
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
+                            },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
 
-            Spacer(Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.padding(vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                val turnText = when (gameState.currentPlayer) {
-                    PlayerColor.BLACK -> "Tocca a: Wialiam Sheaskeper"
-                    PlayerColor.WHITE -> "Tocca a te"
+                    // Abbiamo sostituito i numeri a destra con uno spacer
+                    // per mantenere la scacchiera centrata.
+                    Spacer(modifier = Modifier.width(24.dp))
                 }
-                Text(text = turnText, style = MaterialTheme.typography.titleLarge)
-                Text(
-                    text = "⏳ ${formatTime(gameState.turnElapsedTimeInSeconds)}",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                Spacer(modifier = Modifier.height(4.dp))
+                BoardFiles() // Lettere in basso
             }
 
             Spacer(Modifier.height(16.dp))
@@ -337,5 +343,48 @@ fun DefaultPreview() {
             playerTeamStyle = availableTeamStyles.first(),
             boardStyle = availableBoardStyles.first()
         )
+    }
+}
+
+/**
+ * Mostra le etichette delle colonne (A-H) sopra e sotto la scacchiera.
+ */
+@Composable
+private fun BoardFiles(modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(start = 24.dp, end = 24.dp), // Aggiungiamo un padding per allineare le lettere con la scacchiera
+        horizontalArrangement = Arrangement.SpaceAround
+    ) {
+        ('A'..'H').forEach { file ->
+            Text(
+                text = file.toString(),
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+        }
+    }
+}
+
+/**
+ * Mostra le etichette delle righe (8-1) ai lati della scacchiera.
+ */
+@Composable
+private fun BoardRanks(modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier.fillMaxHeight(),
+        verticalArrangement = Arrangement.SpaceAround,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        (8 downTo 1).forEach { rank ->
+            Text(
+                text = rank.toString(),
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+        }
     }
 }
