@@ -4,19 +4,20 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
 import com.google.mediapipe.framework.image.BitmapImageBuilder
-
 import com.google.mediapipe.tasks.genai.llminference.GraphOptions
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.google.mediapipe.tasks.genai.llminference.LlmInferenceSession
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.isActive
 import java.io.File
 
 class GemmaEngine : InferenceEngine {
     private val tag = "GemmaEngine"
     private var llmInference: LlmInference? = null
     private var session: LlmInferenceSession? = null
+    private var sessionOptions: LlmInferenceSession.LlmInferenceSessionOptions? = null
 
     companion object {
         private const val MAX_TOKENS = 2048
@@ -57,7 +58,22 @@ class GemmaEngine : InferenceEngine {
 
         } catch (e: Exception) {
             Log.e(tag, "Errore durante il caricamento del motore Gemma.", e)
-            unload() // Pulisce le risorse in caso di fallimento
+            unload()
+            throw e
+        }
+    }
+
+    override suspend fun resetSession() {
+        if (llmInference == null || sessionOptions == null) {
+            Log.e(tag, "Impossibile resettare: motore non inizializzato.")
+            return
+        }
+        try {
+            session?.close()
+            session = LlmInferenceSession.createFromOptions(llmInference, sessionOptions)
+            Log.d(tag, "Sessione resettata.")
+        } catch (e: Exception) {
+            Log.e(tag, "Errore durante il reset della sessione.", e)
             throw e
         }
     }
@@ -76,36 +92,51 @@ class GemmaEngine : InferenceEngine {
     }
 
     override fun generateMove(prompt: String, bitmap: Bitmap): Flow<String> = callbackFlow {
+        Log.d(tag, "Chiamata a generateMove con Bitmap (compatibilità).")
         if (session == null) {
-            val errorMsg = "[ERRORE: Sessione Gemma non inizializzata]"
-            Log.e(tag, errorMsg)
-            trySend(errorMsg).isSuccess
+            trySend("[ERRORE: Sessione non inizializzata]").isSuccess
             close()
             return@callbackFlow
         }
-
         try {
-            // 1. Aggiungi il prompt di testo
             session?.addQueryChunk(prompt)
-
-            // 2. Converte e aggiunge il Bitmap
             val mediapipeImage = BitmapImageBuilder(bitmap).build()
             session?.addImage(mediapipeImage)
-
-            // 3. Avvia la generazione della risposta asincrona
             session?.generateResponseAsync { partialResponse, done ->
+                partialResponse?.let { trySend(it).isSuccess }
+                if (done) close()
+            }
+        } catch (e: Exception) { close(e) }
+        awaitClose { Log.d(tag, "Flow (Bitmap) chiuso.") }
+    }
+
+    // NUOVO metodo testuale
+    override fun generateMove(prompt: String, boardState: String): Flow<String> = callbackFlow {
+        if (session == null) {
+            trySend("[ERRORE: Sessione non inizializzata]").isSuccess
+            close()
+            return@callbackFlow
+        }
+        val fullResponse = StringBuilder()
+        try {
+            // Unisce il prompt principale con lo stato della scacchiera
+            val fullPrompt = "$prompt\n\nHere is the chessboard:\n$boardState"
+            session!!.addQueryChunk(fullPrompt)
+            session!!.generateResponseAsync { partialResponse, done ->
+                if (isActive) {
                 partialResponse?.let {
-                    trySend(it).isSuccess
+                        fullResponse.append(it)
+                        trySend(it)
+                    }
                 }
                 if (done) {
                     close()
                 }
             }
         } catch (e: Exception) {
-            Log.e(tag, "Errore durante la generazione della mossa.", e)
+            Log.e(tag, "Errore in generateResponseAsync (testuale).", e)
             close(e)
         }
-
-        awaitClose { Log.d(tag, "Flow per generateMove chiuso.") }
+        awaitClose { Log.d(tag, "Flow (Testuale) chiuso.") }
     }
 }

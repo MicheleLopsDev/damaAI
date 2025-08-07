@@ -3,6 +3,7 @@ package io.github.luposolitario.damaai.engine
 import android.content.Context
 import android.graphics.Bitmap
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 
 /**
  * Interfaccia generica per un motore di inferenza.
@@ -34,4 +35,7 @@ interface InferenceEngine {
      */
     fun generateMove(prompt: String, bitmap: Bitmap): Flow<String>
 
+    suspend fun resetSession()
+
+    fun generateMove(prompt: String, boardState: String): Flow<String>
 }
