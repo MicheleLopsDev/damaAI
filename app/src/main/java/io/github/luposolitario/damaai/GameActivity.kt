@@ -29,6 +29,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import io.github.luposolitario.damaai.data.*
+import io.github.luposolitario.damaai.engine.DamaEngine
 import io.github.luposolitario.damaai.engine.DamaEngineImpl
 import io.github.luposolitario.damaai.game_logic.Difficolta
 import io.github.luposolitario.damaai.game_logic.Posizione
@@ -40,6 +41,7 @@ import io.github.luposolitario.damaai.screen.SettingsScreen
 import io.github.luposolitario.damaai.ui.theme.DamaAITheme
 import io.github.luposolitario.damaai.viewmodels.SettingsViewModel
 import io.github.luposolitario.damaai.viewmodels.SettingsViewModelFactory
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class GameActivity : ComponentActivity() {
@@ -146,15 +148,21 @@ fun GameScreen(
     var selectedPieceCoords by remember { mutableStateOf<Posizione?>(null) }
     var validMoveDestinations by remember { mutableStateOf<List<Posizione>>(emptyList()) }
 
-    val damaEngine = remember { DamaEngineImpl() }
+    // Utilizziamo un motore di tipo DamaEngine per rispettare l'interfaccia
+    val damaEngine: DamaEngine = remember { DamaEngineImpl() }
     val coroutineScope = rememberCoroutineScope()
     var chatMessages by remember { mutableStateOf<List<String>>(emptyList()) }
 
-    fun updateUiFromEngine() {
+    // Funzione helper per aggiornare la UI e gestire l'animazione
+    suspend fun updateUiWithAnimation(capturedPieceToAnimate: Piece?) {
         val newStateString = damaEngine.getStatoScacchiera()
         val newPieces = parseBoardState(newStateString)
-        gameState = gameState.copy(pieces = newPieces)
-        Log.d("GameScreen", "UI aggiornata con il nuovo stato dal motore.")
+        gameState = gameState.copy(pieces = newPieces, capturedPiece = capturedPieceToAnimate)
+        if (capturedPieceToAnimate != null) {
+            delay(1000) // Pausa per l'animazione di dissolvenza
+        }
+        // Pulisce lo stato della pedina catturata per fermare l'animazione
+        gameState = gameState.copy(capturedPiece = null)
     }
 
     fun getValidMovesForSelectedPiece() {
@@ -165,15 +173,15 @@ fun GameScreen(
         val allValidMovesStr = damaEngine.getMosseValide()
         val movesForPiece = allValidMovesStr
             .filter { it.startsWith(selectedPieceCoords!!.toNotazioneAlgebrica()) }
-            .mapNotNull { fromNotazioneAlgebrica(it.split(" ")[1]) } // Prendiamo solo la destinazione
+            .mapNotNull { fromNotazioneAlgebrica(it.split(" ")[1]) }
         validMoveDestinations = movesForPiece
-        Log.d("GameFlow", "Mosse valide per ${selectedPieceCoords!!.toNotazioneAlgebrica()}: $movesForPiece")
     }
 
     LaunchedEffect(Unit) {
         damaEngine.nuovaPartita(Difficolta.FACILE)
         Log.d("GameFlow", "--- NUOVA PARTITA ---")
-        updateUiFromEngine()
+        val newPieces = parseBoardState(damaEngine.getStatoScacchiera())
+        gameState = gameState.copy(pieces = newPieces)
     }
 
     Scaffold(
@@ -225,30 +233,42 @@ fun GameScreen(
                                     if (selectedPieceCoords != null) {
                                         val startNotation = selectedPieceCoords!!.toNotazioneAlgebrica()
                                         val endNotation = clickedPos.toNotazioneAlgebrica()
+                                        val moveString = "$startNotation $endNotation"
 
-                                        if (startNotation != endNotation) {
-                                            val moveString = "$startNotation $endNotation"
-                                            Log.d("GameFlow", "Umano tenta la mossa: $moveString")
+                                        // 1. Esegui la mossa dell'umano
+                                        val mossaUmano = damaEngine.muoviPezzoUmano(moveString)
 
-                                            val mossaPrecedente = damaEngine.getStatoScacchiera()
-                                            val aiMove = damaEngine.muoviPezzo(moveString)
-                                            val mossaSuccessiva = damaEngine.getStatoScacchiera()
+                                        if (mossaUmano != null) {
+                                            Log.i("GameFlow", "Mossa umana ACCETTATA: $moveString")
+                                            chatMessages = chatMessages + "Tua mossa: $moveString"
+                                            // Animazione per la cattura dell'umano
+                                            val pedinaCatturataUmano = damaEngine.trovaPedinaCatturata(mossaUmano)
+                                            updateUiWithAnimation(pedinaCatturataUmano)
 
-                                            if (mossaPrecedente == mossaSuccessiva) {
-                                                Log.w("GameFlow", "Mossa umana RIFIUTATA: $moveString")
-                                            } else {
-                                                Log.i("GameFlow", "Mossa umana ACCETTATA: $moveString")
-                                                chatMessages = chatMessages + "Tua mossa: $moveString"
-                                                if (aiMove != null) {
-                                                    Log.i("GameFlow", "IA risponde con: $aiMove")
-                                                    chatMessages = chatMessages + "Mossa IA: $aiMove"
+                                            // 2. Controlla se il gioco finisce
+                                            val winnerAfterHumanMove = damaEngine.getVincitore()
+                                            if (winnerAfterHumanMove == null) {
+                                                // 3. Esegui la mossa dell'IA
+                                                val mossaIA = damaEngine.faiMossaIA()
+                                                if (mossaIA != null) {
+                                                    Log.i("GameFlow", "IA risponde con: ${mossaIA.toString()}")
+                                                    chatMessages = chatMessages + "Mossa IA: ${mossaIA.toString()}"
+                                                    // Animazione per la cattura dell'IA
+                                                    val pedinaCatturataIA = damaEngine.trovaPedinaCatturata(mossaIA)
+                                                    updateUiWithAnimation(pedinaCatturataIA)
                                                 }
                                             }
+                                        } else {
+                                            Log.w("GameFlow", "Mossa umana RIFIUTATA: $moveString")
                                         }
+
+                                        // 4. Reset selezione e aggiornamento finale UI
                                         selectedPieceCoords = null
                                         validMoveDestinations = emptyList()
-                                        updateUiFromEngine()
+                                        val finalPieces = parseBoardState(damaEngine.getStatoScacchiera())
+                                        gameState = gameState.copy(pieces = finalPieces)
 
+                                        // 5. Controllo finale del vincitore
                                         val winner = damaEngine.getVincitore()
                                         if (winner != null) {
                                             val winnerMessage = "Partita finita! Vince il ${winner.name}"
@@ -256,6 +276,7 @@ fun GameScreen(
                                                 chatMessages = chatMessages + winnerMessage
                                             }
                                         }
+
                                     } else {
                                         if (pieceAtPos != null && pieceAtPos.color == PlayerColor.WHITE) {
                                             selectedPieceCoords = clickedPos
@@ -278,8 +299,6 @@ fun GameScreen(
         }
     }
 }
-
-// ... Il resto del file (AIOpponentHeader, ChatDisplayArea, etc.) rimane invariato ...
 
 @Composable
 fun AIOpponentHeader(name: String, isThinking: Boolean, modifier: Modifier = Modifier) {

@@ -27,6 +27,9 @@ import io.github.luposolitario.damaai.data.GameState
 import io.github.luposolitario.damaai.data.PlayerColor
 import io.github.luposolitario.damaai.data.TeamStyle
 import io.github.luposolitario.damaai.game_logic.Posizione
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.getValue
 
 @Composable
 fun GameBoardArea(
@@ -34,7 +37,7 @@ fun GameBoardArea(
     playerTeamStyle: TeamStyle,
     boardStyle: BoardStyle,
     selectedSquare: Posizione?,
-    validMoveSquares: List<Posizione>, // NUOVO: Lista delle caselle di destinazione valide
+    validMoveSquares: List<Posizione>,
     onSquareClick: (row: Int, col: Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -43,6 +46,13 @@ fun GameBoardArea(
     } else {
         null
     }
+
+    // --- NUOVA LOGICA DI ANIMAZIONE ---
+    val capturedPieceAlpha by animateFloatAsState(
+        targetValue = if (gameState.capturedPiece != null) 0f else 1f,
+        animationSpec = tween(durationMillis = 800), // Durata dell'animazione
+        label = "CapturedPieceAlpha"
+    )
 
     Canvas(
         modifier = modifier.pointerInput(Unit) {
@@ -76,7 +86,6 @@ fun GameBoardArea(
             }
         }
 
-        // --- NUOVA LOGICA PER DISEGNARE I SUGGERIMENTI ---
         validMoveSquares.forEach { pos ->
             drawCircle(
                 color = Color.DarkGray.copy(alpha = 0.4f),
@@ -87,10 +96,20 @@ fun GameBoardArea(
                 )
             )
         }
-        // --- FINE NUOVA LOGICA ---
+
+        // --- DISEGNO DELLE PEDINE MODIFICATO ---
+        val piecesToDraw = if (gameState.capturedPiece != null && capturedPieceAlpha > 0f) {
+            // Se c'è una pedina da animare, la aggiungiamo alla lista dei pezzi normali
+            gameState.pieces + gameState.capturedPiece!!
+        } else {
+            gameState.pieces
+        }
 
 
-        gameState.pieces.forEach { piece ->
+        piecesToDraw.forEach { piece ->
+            val isCapturedPiece = piece == gameState.capturedPiece
+            val alpha = if(isCapturedPiece) capturedPieceAlpha else 1f
+
             val center = Offset(
                 x = piece.col * squareSize + squareSize / 2,
                 y = piece.row * squareSize + squareSize / 2
@@ -99,14 +118,14 @@ fun GameBoardArea(
 
 
             drawCircle(
-                color = Color.Black.copy(alpha = 0.3f),
+                color = Color.Black.copy(alpha = 0.3f * alpha),
                 radius = pieceRadius,
                 center = center.copy(y = center.y + 4f)
             )
 
             if (piece.color == PlayerColor.WHITE) {
                 if (playerPainter != null) {
-                    drawCircle(color = Color.White, radius = pieceRadius, center = center)
+                    drawCircle(color = Color.White.copy(alpha = alpha), radius = pieceRadius, center = center)
                     val clipPath =
                         Path().apply { addOval(Rect(center = center, radius = pieceRadius)) }
                     clipPath(path = clipPath) {
@@ -116,30 +135,31 @@ fun GameBoardArea(
                                     size = Size(
                                         pieceRadius * 2,
                                         pieceRadius * 2
-                                    )
+                                    ),
+                                    alpha = alpha
                                 )
                             }
                         }
                     }
                     drawCircle(
-                        color = Color(0xFFBBBBBB),
+                        color = Color(0xFFBBBBBB).copy(alpha = alpha),
                         radius = pieceRadius,
                         center = center,
                         style = Stroke(width = squareSize * 0.04f)
                     )
                 } else {
-                    drawCircle(color = Color.White, radius = pieceRadius, center = center)
+                    drawCircle(color = Color.White.copy(alpha = alpha), radius = pieceRadius, center = center)
                     drawCircle(
-                        color = Color(0xFFBBBBBB),
+                        color = Color(0xFFBBBBBB).copy(alpha = alpha),
                         radius = pieceRadius,
                         center = center,
                         style = Stroke(width = squareSize * 0.04f)
                     )
                 }
             } else {
-                drawCircle(color = Color(0xFF222222), radius = pieceRadius, center = center)
+                drawCircle(color = Color(0xFF222222).copy(alpha = alpha), radius = pieceRadius, center = center)
                 drawCircle(
-                    color = Color.Black,
+                    color = Color.Black.copy(alpha = alpha),
                     radius = pieceRadius,
                     center = center,
                     style = Stroke(width = squareSize * 0.04f)

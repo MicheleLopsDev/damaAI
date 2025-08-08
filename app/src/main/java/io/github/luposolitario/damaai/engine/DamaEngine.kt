@@ -1,7 +1,9 @@
 package io.github.luposolitario.damaai.engine
 
+import io.github.luposolitario.damaai.data.Piece
 import io.github.luposolitario.damaai.game_logic.Colore
 import io.github.luposolitario.damaai.game_logic.Difficolta
+import io.github.luposolitario.damaai.game_logic.Mossa
 
 /**
  * L'interfaccia pubblica principale per interagire con il motore di gioco della Dama.
@@ -15,14 +17,22 @@ interface DamaEngine {
     fun nuovaPartita(difficolta: Difficolta)
 
     /**
-     * Esegue la mossa del giocatore (BIANCO) e, se la partita non è finita,
-     * calcola ed esegue la contromossa dell'IA (NERO).
-     *
-     * @param mossaGiocatore Una stringa che rappresenta la mossa, es. "C7 B6".
-     * @return La mossa dell'IA in formato stringa, o `null` se la mossa del giocatore
-     * non è valida o se uno dei due giocatori ha vinto.
+     * Esegue SOLO la mossa del giocatore.
+     * Restituisce la mossa eseguita se valida, altrimenti null.
      */
-    fun muoviPezzo(mossaGiocatore: String): String?
+    fun muoviPezzoUmano(mossaGiocatore: String): Mossa?
+
+
+    /**
+     * Trova la pedina catturata confrontando lo stato attuale con quello precedente.
+     */
+    fun trovaPedinaCatturata(mossa: Mossa): Piece?
+
+    /**
+     * Esegue SOLO la mossa dell'IA.
+     * Restituisce la mossa eseguita, o null se non può muovere.
+     */
+    fun faiMossaIA(): Mossa?
 
     /**
      * Restituisce il vincitore della partita, se ce n'è uno.

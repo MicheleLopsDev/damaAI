@@ -16,12 +16,12 @@ data class Piece(
     val color: PlayerColor,
 )
 
-// Sostituisci la vecchia GameState con questa
 data class GameState(
     val pieces: List<Piece>,
     val selectedPiece: Piece? = null,
     val currentPlayer: PlayerColor = PlayerColor.WHITE,
-    val turnElapsedTimeInSeconds: Long = 0L // <-- NUOVA RIGA
+    val turnElapsedTimeInSeconds: Long = 0L, // <-- RIGA INVARIATA
+    val capturedPiece: Piece? = null // <-- NUOVA RIGA
 )
 
 // Aggiungi questo codice in fondo al file GameModel.kt
