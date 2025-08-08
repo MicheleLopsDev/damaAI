@@ -20,6 +20,8 @@ class SettingsManager(private val context: Context) {
 
         // --- NUOVA CHIAVE PER LO STILE DELLA SCACCHIERA ---
         val BOARD_STYLE_ID = stringPreferencesKey("board_style_id")
+        // --- NUOVA CHIAVE PER LA DIFFICOLTÀ ---
+        val DIFFICULTY_LEVEL = stringPreferencesKey("difficulty_level")
     }
 
     // --- Gestione Tema Scuro (invariata) ---
@@ -45,6 +47,20 @@ class SettingsManager(private val context: Context) {
     suspend fun setBoardStyle(styleId: String) {
         context.dataStore.edit { preferences ->
             preferences[BOARD_STYLE_ID] = styleId
+        }
+    }
+
+    // --- NUOVO: Flow per leggere la difficoltà ---
+    val difficultyLevelFlow: Flow<String> = context.dataStore.data
+        .map { preferences ->
+            // Se non c'è un valore salvato, usiamo "FACILE" come default.
+            preferences[DIFFICULTY_LEVEL] ?: "FACILE"
+        }
+
+    // --- NUOVO: Funzione per salvare la difficoltà ---
+    suspend fun setDifficultyLevel(level: String) {
+        context.dataStore.edit { preferences ->
+            preferences[DIFFICULTY_LEVEL] = level
         }
     }
 }

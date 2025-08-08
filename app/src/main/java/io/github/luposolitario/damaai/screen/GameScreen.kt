@@ -31,6 +31,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -62,6 +63,10 @@ fun SettingsScreen(
     val isDarkMode by settingsViewModel.isDarkModeEnabled.collectAsState(initial = isSystemInDarkTheme())
     val selectedTeamStyleId by settingsViewModel.playerTeamStyleId.collectAsState()
     val selectedBoardStyleId by settingsViewModel.boardStyleId.collectAsState()
+// --- LEGGIAMO LO STATO DELLA DIFFICOLTÀ ---
+    val selectedDifficulty by settingsViewModel.difficultyLevel.collectAsState()
+
+
 
     Scaffold(
         topBar = {
@@ -80,6 +85,58 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
+
+            // --- NUOVA SEZIONE PER LA DIFFICOLTÀ ---
+            item {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        "Livello Difficoltà IA",
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    // Opzione "Facile"
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().clickable { settingsViewModel.setDifficultyLevel("FACILE") }
+                    ) {
+                        RadioButton(
+                            selected = selectedDifficulty == "FACILE",
+                            onClick = { settingsViewModel.setDifficultyLevel("FACILE") }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Facile")
+                    }
+
+                    // Opzione "Medio"
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().clickable { settingsViewModel.setDifficultyLevel("MEDIO") }
+                    ) {
+                        RadioButton(
+                            selected = selectedDifficulty == "MEDIO",
+                            onClick = { settingsViewModel.setDifficultyLevel("MEDIO") }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Medio")
+                    }
+
+                    // Opzione "Difficile"
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().clickable { settingsViewModel.setDifficultyLevel("DIFFICILE") }
+                    ) {
+                        RadioButton(
+                            selected = selectedDifficulty == "DIFFICILE",
+                            onClick = { settingsViewModel.setDifficultyLevel("DIFFICILE") }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Difficile")
+                    }
+                }
+            }
+
+
             item {
                 Row(
                     verticalAlignment = Alignment.Companion.CenterVertically,

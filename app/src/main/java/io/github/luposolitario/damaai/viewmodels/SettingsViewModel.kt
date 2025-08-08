@@ -41,6 +41,22 @@ class SettingsViewModel(
             settingsManager.setBoardStyle(styleId)
         }
     }
+
+    // --- NUOVO: StateFlow per la difficoltà ---
+    val difficultyLevel: StateFlow<String> = settingsManager.difficultyLevelFlow
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = "FACILE" // Valore di partenza
+        )
+
+    // --- NUOVO: Funzione per salvare la difficoltà ---
+    fun setDifficultyLevel(level: String) {
+        viewModelScope.launch {
+            settingsManager.setDifficultyLevel(level)
+        }
+    }
+
 }
 
 
