@@ -29,6 +29,8 @@ import io.github.luposolitario.damaai.data.GameState
 import io.github.luposolitario.damaai.data.PlayerColor
 import io.github.luposolitario.damaai.data.TeamStyle
 import io.github.luposolitario.damaai.game_logic.Posizione
+import kotlin.math.cos
+import kotlin.math.sin
 
 @Composable
 fun GameBoardArea(
@@ -154,6 +156,34 @@ fun GameBoardArea(
             } else {
                 drawCircle(color = Color(0xFF222222).copy(alpha = alpha), radius = pieceRadius, center = center)
                 drawCircle(color = Color.Black.copy(alpha = alpha), radius = pieceRadius, center = center, style = Stroke(width = squareSize * 0.04f))
+            }
+
+            if (piece.isDama) {
+                val starPath = Path()
+                val numPoints = 5
+                val angle = (Math.PI / numPoints).toFloat()
+                val radiusOuter = pieceRadius * 0.6f // Raggio esterno della stella
+                val radiusInner = pieceRadius * 0.3f // Raggio interno della stella
+
+                // Sposta il punto di partenza della stella
+                starPath.moveTo(
+                    center.x + radiusOuter * cos(0f),
+                    center.y + radiusOuter * sin(0f)
+                )
+                // Disegna i segmenti della stella
+                for (i in 1 until numPoints * 2) {
+                    val radius = if (i % 2 == 0) radiusOuter else radiusInner
+                    val x = center.x + radius * cos(i * angle)
+                    val y = center.y + radius * sin(i * angle)
+                    starPath.lineTo(x, y)
+                }
+                starPath.close()
+
+                // Disegna il percorso della stella
+                drawPath(
+                    path = starPath,
+                    color = Color(0xFFFFD700) // Un bel color oro
+                )
             }
         }
 

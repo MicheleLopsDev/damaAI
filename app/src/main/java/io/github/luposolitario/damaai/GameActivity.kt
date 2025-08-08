@@ -97,6 +97,8 @@ fun AppNavigation(settingsViewModel: SettingsViewModel) {
     }
 }
 
+// In GameActivity.kt
+
 private fun parseBoardState(boardState: String): List<Piece> {
     val pieces = mutableListOf<Piece>()
     val rows = boardState.trim().lines().drop(1)
@@ -117,7 +119,10 @@ private fun parseBoardState(boardState: String): List<Piece> {
                     else -> null
                 }
                 if (color != null) {
-                    pieces.add(Piece(row = rowIndex, col = colIndex, color = color))
+                    // --- MODIFICA QUI ---
+                    // Controlliamo se il simbolo è maiuscolo per identificare la Dama.
+                    val isDama = symbol.isUpperCase()
+                    pieces.add(Piece(row = rowIndex, col = colIndex, color = color, isDama = isDama))
                 }
             }
         }
@@ -125,7 +130,6 @@ private fun parseBoardState(boardState: String): List<Piece> {
     return pieces
 }
 
-// NUOVA funzione per convertire la notazione (es. "A3") in Posizione
 fun fromNotazioneAlgebrica(notazione: String): Posizione? {
     if (notazione.length != 2) return null
     val colonnaChar = notazione.getOrNull(0)?.uppercaseChar() ?: return null

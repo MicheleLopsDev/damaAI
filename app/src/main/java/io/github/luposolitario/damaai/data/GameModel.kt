@@ -15,9 +15,8 @@ data class Piece(
     val row: Int,
     val col: Int,
     val color: PlayerColor,
+    val isDama: Boolean = false // <-- AGGIUNGI QUESTA RIGA
 )
-
-// In GameModel.kt, modifica la data class GameState
 
 data class GameState(
     val pieces: List<Piece>,
