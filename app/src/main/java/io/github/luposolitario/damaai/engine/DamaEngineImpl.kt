@@ -17,7 +17,7 @@ class DamaEngineImpl : DamaEngine {
     override fun muoviPezzo(mossaGiocatore: String): String? {
         Log.d(TAG, "muoviPezzo chiamato con mossa: '$mossaGiocatore'")
         val partitaCorrente = partita ?: run {
-            Log.e(TAG, "Errore: la partita non è stata inizializzata. Chiamare nuovaPartita() prima.")
+            Log.e(TAG, "Errore: la partita non è stata inizializzata.")
             return null
         }
 
@@ -26,19 +26,40 @@ class DamaEngineImpl : DamaEngine {
             return null
         }
 
-        val mossa = parseMossa(mossaGiocatore)
-        if (mossa == null) {
+        // --- INIZIO LOGICA MODIFICATA ---
+
+        // 1. Analizziamo la mossa dell'utente per ottenere partenza e arrivo
+        val mossaUtente = parseMossa(mossaGiocatore)
+        if (mossaUtente == null) {
             Log.w(TAG, "Formato mossa non valido: '$mossaGiocatore'")
             return null
         }
 
-        Log.d(TAG, "Stato scacchiera PRIMA della mossa umana:\n${partitaCorrente.getStatoScacchiera()}")
-        val mossaUmanaRiuscita = partitaCorrente.eseguiMossaUmano(mossa)
-        if (!mossaUmanaRiuscita) {
+        // 2. Prendiamo TUTTE le mosse valide calcolate dal motore
+        val mosseValidePossibili = partitaCorrente.getMosseValide()
+
+        // 3. Cerchiamo tra le mosse valide quella che corrisponde a quella dell'utente
+        val mossaCompletaDaEseguire = mosseValidePossibili.find {
+            it.partenza == mossaUtente.partenza && it.arrivo == mossaUtente.arrivo
+        }
+
+        if (mossaCompletaDaEseguire == null) {
             Log.w(TAG, "Mossa umana non valida: $mossaGiocatore")
             return null
         }
+
+        // 4. Eseguiamo la mossa COMPLETA, che ora contiene anche le info sulla cattura
+        Log.d(TAG, "Stato scacchiera PRIMA della mossa umana:\n${partitaCorrente.getStatoScacchiera()}")
+        val mossaUmanaRiuscita = partitaCorrente.eseguiMossaUmano(mossaCompletaDaEseguire)
+        if (!mossaUmanaRiuscita) {
+            // Questo non dovrebbe accadere se la logica è corretta, ma è una sicurezza in più
+            Log.e(TAG, "Errore imprevisto durante l'esecuzione della mossa: $mossaCompletaDaEseguire")
+            return null
+        }
+        // --- FINE LOGICA MODIFICATA ---
+
         Log.d(TAG, "Mossa umana ESEGUITA. Stato scacchiera DOPO:\n${partitaCorrente.getStatoScacchiera()}")
+
 
         if (partitaCorrente.getVincitore() != null) {
             Log.i(TAG, "L'umano ha vinto!")
@@ -60,7 +81,7 @@ class DamaEngineImpl : DamaEngine {
 
     override fun getStatoScacchiera(): String {
         val stato = partita?.getStatoScacchiera() ?: "Partita non iniziata."
-        Log.d(TAG, "getStatoScacchiera chiamato: $stato")
+        Log.d(TAG, "getStatoScacchiera chiamato.")
         return stato
     }
 
@@ -71,6 +92,7 @@ class DamaEngineImpl : DamaEngine {
         return mosse
     }
 
+    // Questa funzione ora serve solo a estrarre le coordinate di partenza e arrivo
     private fun parseMossa(notazione: String): Mossa? {
         val parti = notazione.trim().uppercase().split(" ")
         if (parti.size != 2) return null
@@ -79,6 +101,7 @@ class DamaEngineImpl : DamaEngine {
         val arrivo = fromNotazioneAlgebrica(parti[1])
 
         return if (partenza != null && arrivo != null) {
+            // Creiamo una mossa "temporanea" senza info sulla cattura
             Mossa(partenza, arrivo)
         } else {
             null
@@ -93,7 +116,7 @@ class DamaEngineImpl : DamaEngine {
         if (colonnaChar !in 'A'..'H' || rigaChar !in '1'..'8') return null
 
         val colonna = colonnaChar - 'A'
-        val riga = '8' - rigaChar // Correzione per allineare '8' alla riga 0
+        val riga = '8' - rigaChar
         return Posizione(riga, colonna)
     }
 }

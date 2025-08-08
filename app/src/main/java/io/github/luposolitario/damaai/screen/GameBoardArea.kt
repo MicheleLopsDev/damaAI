@@ -26,42 +26,17 @@ import io.github.luposolitario.damaai.data.BoardStyle
 import io.github.luposolitario.damaai.data.GameState
 import io.github.luposolitario.damaai.data.PlayerColor
 import io.github.luposolitario.damaai.data.TeamStyle
-
-fun captureViewAsBitmap(view: View, bounds: Rect, onBitmap: (Bitmap?) -> Unit) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        val bitmap = Bitmap.createBitmap(bounds.width.toInt(), bounds.height.toInt(), Bitmap.Config.ARGB_8888)
-        val rect = android.graphics.Rect(
-            bounds.left.toInt(),
-            bounds.top.toInt(),
-            bounds.right.toInt(),
-            bounds.bottom.toInt()
-        )
-
-        PixelCopy.request(
-            (view.context as Activity).window,
-            rect,
-            bitmap,
-            { result ->
-                if (result == PixelCopy.SUCCESS) {
-                    onBitmap(bitmap)
-                } else {
-                    onBitmap(null)
-                }
-            },
-            Handler(Looper.getMainLooper())
-        )
-    } else {
-        onBitmap(null)
-    }
-}
+import io.github.luposolitario.damaai.game_logic.Posizione
 
 @Composable
 fun GameBoardArea(
     gameState: GameState,
     playerTeamStyle: TeamStyle,
     boardStyle: BoardStyle,
+    selectedSquare: Posizione?,
+    validMoveSquares: List<Posizione>, // NUOVO: Lista delle caselle di destinazione valide
     onSquareClick: (row: Int, col: Int) -> Unit,
-    modifier: Modifier = Modifier.Companion
+    modifier: Modifier = Modifier
 ) {
     val playerPainter: Painter? = if (playerTeamStyle.id != "default") {
         painterResource(id = playerTeamStyle.flagResId)
@@ -90,8 +65,30 @@ fun GameBoardArea(
                     topLeft = Offset(x = col * squareSize, y = row * squareSize),
                     size = Size(width = squareSize, height = squareSize)
                 )
+
+                if (selectedSquare != null && selectedSquare.riga == row && selectedSquare.colonna == col) {
+                    drawRect(
+                        color = Color.Yellow.copy(alpha = 0.5f),
+                        topLeft = Offset(x = col * squareSize, y = row * squareSize),
+                        size = Size(width = squareSize, height = squareSize)
+                    )
+                }
             }
         }
+
+        // --- NUOVA LOGICA PER DISEGNARE I SUGGERIMENTI ---
+        validMoveSquares.forEach { pos ->
+            drawCircle(
+                color = Color.DarkGray.copy(alpha = 0.4f),
+                radius = squareSize * 0.15f,
+                center = Offset(
+                    x = pos.colonna * squareSize + squareSize / 2,
+                    y = pos.riga * squareSize + squareSize / 2
+                )
+            )
+        }
+        // --- FINE NUOVA LOGICA ---
+
 
         gameState.pieces.forEach { piece ->
             val center = Offset(
@@ -100,23 +97,16 @@ fun GameBoardArea(
             )
             val pieceRadius = squareSize * 0.38f
 
-            if (piece == gameState.selectedPiece) {
-                drawCircle(
-                    color = Color.Companion.Yellow.copy(alpha = 0.5f),
-                    radius = squareSize / 2,
-                    center = center
-                )
-            }
 
             drawCircle(
-                color = Color.Companion.Black.copy(alpha = 0.3f),
+                color = Color.Black.copy(alpha = 0.3f),
                 radius = pieceRadius,
                 center = center.copy(y = center.y + 4f)
             )
 
             if (piece.color == PlayerColor.WHITE) {
                 if (playerPainter != null) {
-                    drawCircle(color = Color.Companion.White, radius = pieceRadius, center = center)
+                    drawCircle(color = Color.White, radius = pieceRadius, center = center)
                     val clipPath =
                         Path().apply { addOval(Rect(center = center, radius = pieceRadius)) }
                     clipPath(path = clipPath) {
@@ -138,7 +128,7 @@ fun GameBoardArea(
                         style = Stroke(width = squareSize * 0.04f)
                     )
                 } else {
-                    drawCircle(color = Color.Companion.White, radius = pieceRadius, center = center)
+                    drawCircle(color = Color.White, radius = pieceRadius, center = center)
                     drawCircle(
                         color = Color(0xFFBBBBBB),
                         radius = pieceRadius,
@@ -149,7 +139,7 @@ fun GameBoardArea(
             } else {
                 drawCircle(color = Color(0xFF222222), radius = pieceRadius, center = center)
                 drawCircle(
-                    color = Color.Companion.Black,
+                    color = Color.Black,
                     radius = pieceRadius,
                     center = center,
                     style = Stroke(width = squareSize * 0.04f)
