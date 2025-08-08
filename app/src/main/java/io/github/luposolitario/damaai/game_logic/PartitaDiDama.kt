@@ -13,6 +13,13 @@ class PartitaDiDama(difficoltaIA: Difficolta) {
     // E contiene anche il giocatore IA.
     private val giocatoreIA = GiocatoreIA(difficoltaIA, motore)
 
+
+    // Aggiungi questa funzione alla classe PartitaDiDama
+
+    fun getPezziConCatturaObbligatoria(): List<Posizione> {
+        return motore.getPezziConCatturaObbligatoria()
+    }
+
     /**
      * Restituisce lo stato attuale della scacchiera in formato testuale.
      */

@@ -66,6 +66,17 @@ class MotoreDiGioco() {
         return true
     }
 
+    // Aggiungi questa funzione dentro la classe MotoreDiGioco
+
+    fun getPezziConCatturaObbligatoria(): List<Posizione> {
+        val mosseDiCattura = trovaTutteLeMosseDiCattura(turnoCorrente)
+        if (mosseDiCattura.isNotEmpty()) {
+            // Usiamo distinct() per evitare duplicati se un pezzo ha più catture
+            return mosseDiCattura.map { it.partenza }.distinct()
+        }
+        return emptyList()
+    }
+
     private fun cambiaTurno() {
         turnoCorrente = if (turnoCorrente == Colore.BIANCO) Colore.NERO else Colore.BIANCO
     }

@@ -7,6 +7,7 @@ import io.github.luposolitario.damaai.game_logic.*
 
 class DamaEngineImpl : DamaEngine {
 
+
     private var partita: PartitaDiDama? = null
     private val TAG = "DamaEngineImpl"
     // Memorizziamo lo stato precedente per trovare la pedina catturata
@@ -17,6 +18,12 @@ class DamaEngineImpl : DamaEngine {
         partita = PartitaDiDama(difficolta)
         statoPrecedente = partita?.getStatoScacchiera() ?: ""
         Log.d(TAG, "Partita creata. Stato iniziale scacchiera:\n${partita?.getStatoScacchiera()}")
+    }
+
+    // Aggiungi questa funzione alla classe DamaEngineImpl
+
+    override fun getPezziConCatturaObbligatoria(): List<Posizione> {
+        return partita?.getPezziConCatturaObbligatoria() ?: emptyList()
     }
 
     /**

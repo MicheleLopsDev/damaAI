@@ -4,11 +4,20 @@ import io.github.luposolitario.damaai.data.Piece
 import io.github.luposolitario.damaai.game_logic.Colore
 import io.github.luposolitario.damaai.game_logic.Difficolta
 import io.github.luposolitario.damaai.game_logic.Mossa
+import io.github.luposolitario.damaai.game_logic.Posizione
 
 /**
  * L'interfaccia pubblica principale per interagire con il motore di gioco della Dama.
  */
 interface DamaEngine {
+
+    // Aggiungi questa funzione all'interfaccia DamaEngine
+
+    /**
+     * Restituisce una lista delle posizioni dei pezzi che hanno una cattura obbligatoria.
+     * La lista è vuota se non ci sono catture obbligatorie.
+     */
+    fun getPezziConCatturaObbligatoria(): List<Posizione>
 
     /**
      * Inizia una nuova partita, resettando la scacchiera e impostando la difficoltà dell'IA.

@@ -5,6 +5,7 @@ package io.github.luposolitario.damaai.data
 import androidx.annotation.DrawableRes
 import io.github.luposolitario.damaai.R
 import androidx.compose.ui.graphics.Color
+import io.github.luposolitario.damaai.game_logic.Posizione
 
 enum class PlayerColor {
     WHITE, BLACK
@@ -16,12 +17,15 @@ data class Piece(
     val color: PlayerColor,
 )
 
+// In GameModel.kt, modifica la data class GameState
+
 data class GameState(
     val pieces: List<Piece>,
     val selectedPiece: Piece? = null,
     val currentPlayer: PlayerColor = PlayerColor.WHITE,
-    val turnElapsedTimeInSeconds: Long = 0L, // <-- RIGA INVARIATA
-    val capturedPiece: Piece? = null // <-- NUOVA RIGA
+    val turnElapsedTimeInSeconds: Long = 0L,
+    val capturedPiece: Piece? = null,
+    val mandatoryCapturePieces: List<Posizione> = emptyList() // <-- NUOVA RIGA
 )
 
 // Aggiungi questo codice in fondo al file GameModel.kt

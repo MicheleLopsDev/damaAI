@@ -148,40 +148,46 @@ fun GameScreen(
     var selectedPieceCoords by remember { mutableStateOf<Posizione?>(null) }
     var validMoveDestinations by remember { mutableStateOf<List<Posizione>>(emptyList()) }
 
-    // Utilizziamo un motore di tipo DamaEngine per rispettare l'interfaccia
     val damaEngine: DamaEngine = remember { DamaEngineImpl() }
     val coroutineScope = rememberCoroutineScope()
     var chatMessages by remember { mutableStateOf<List<String>>(emptyList()) }
 
-    // Funzione helper per aggiornare la UI e gestire l'animazione
-    suspend fun updateUiWithAnimation(capturedPieceToAnimate: Piece?) {
-        val newStateString = damaEngine.getStatoScacchiera()
-        val newPieces = parseBoardState(newStateString)
-        gameState = gameState.copy(pieces = newPieces, capturedPiece = capturedPieceToAnimate)
-        if (capturedPieceToAnimate != null) {
-            delay(1000) // Pausa per l'animazione di dissolvenza
-        }
-        // Pulisce lo stato della pedina catturata per fermare l'animazione
+    // Funzione helper per gestire l'animazione della pedina catturata.
+    // Si occupa solo dell'animazione, senza modificare lo stato principale del gioco.
+    suspend fun handleCaptureAnimation(capturedPieceToAnimate: Piece?) {
+        if (capturedPieceToAnimate == null) return
+
+        // Imposta lo stato per far iniziare l'animazione di dissolvenza
+        gameState = gameState.copy(capturedPiece = capturedPieceToAnimate)
+        delay(800) // Durata dell'animazione
+
+        // Pulisce lo stato per terminare l'animazione, facendo sparire la pedina
         gameState = gameState.copy(capturedPiece = null)
     }
 
+    // Funzione per ottenere le mosse valide per il pezzo attualmente selezionato.
     fun getValidMovesForSelectedPiece() {
         if (selectedPieceCoords == null) {
             validMoveDestinations = emptyList()
             return
         }
         val allValidMovesStr = damaEngine.getMosseValide()
+        // Filtra le mosse che partono dalla casella selezionata
         val movesForPiece = allValidMovesStr
             .filter { it.startsWith(selectedPieceCoords!!.toNotazioneAlgebrica()) }
-            .mapNotNull { fromNotazioneAlgebrica(it.split(" ")[1]) }
+            .mapNotNull { fromNotazioneAlgebrica(it.split(" ")[1]) } // Converte la destinazione in Posizione
         validMoveDestinations = movesForPiece
     }
 
+    // Questo `LaunchedEffect` viene eseguito una sola volta quando il Composable appare sullo schermo.
+    // È il posto giusto per inizializzare la partita.
     LaunchedEffect(Unit) {
         damaEngine.nuovaPartita(Difficolta.FACILE)
         Log.d("GameFlow", "--- NUOVA PARTITA ---")
-        val newPieces = parseBoardState(damaEngine.getStatoScacchiera())
-        gameState = gameState.copy(pieces = newPieces)
+        val initialPieces = parseBoardState(damaEngine.getStatoScacchiera())
+        val initialMandatory = damaEngine.getPezziConCatturaObbligatoria()
+        gameState = gameState.copy(pieces = initialPieces, mandatoryCapturePieces = initialMandatory)
+        Log.d("GameFlow", "Stato iniziale. Catture obbligatorie per: $initialMandatory")
     }
 
     Scaffold(
@@ -208,17 +214,23 @@ fun GameScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth().weight(1f),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 BoardFiles()
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(
-                    modifier = Modifier.fillMaxWidth().aspectRatio(1f),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     BoardRanks(modifier = Modifier.width(24.dp))
-                    Box(modifier = Modifier.weight(1f).aspectRatio(1f)) {
+                    Box(modifier = Modifier
+                        .weight(1f)
+                        .aspectRatio(1f)) {
                         GameBoardArea(
                             gameState = gameState,
                             playerTeamStyle = playerTeamStyle,
@@ -230,45 +242,52 @@ fun GameScreen(
                                 val pieceAtPos = gameState.pieces.find { it.row == row && it.col == col }
 
                                 coroutineScope.launch {
+                                    // CASO 1: Un pezzo è già selezionato, quindi l'utente sta cercando di muovere.
                                     if (selectedPieceCoords != null) {
                                         val startNotation = selectedPieceCoords!!.toNotazioneAlgebrica()
                                         val endNotation = clickedPos.toNotazioneAlgebrica()
                                         val moveString = "$startNotation $endNotation"
 
-                                        // 1. Esegui la mossa dell'umano
                                         val mossaUmano = damaEngine.muoviPezzoUmano(moveString)
 
+                                        // Se la mossa è valida, procedi.
                                         if (mossaUmano != null) {
                                             Log.i("GameFlow", "Mossa umana ACCETTATA: $moveString")
                                             chatMessages = chatMessages + "Tua mossa: $moveString"
-                                            // Animazione per la cattura dell'umano
                                             val pedinaCatturataUmano = damaEngine.trovaPedinaCatturata(mossaUmano)
-                                            updateUiWithAnimation(pedinaCatturataUmano)
 
-                                            // 2. Controlla se il gioco finisce
+                                            // Aggiorniamo subito lo stato della scacchiera dopo la mossa umana.
+                                            val piecesAfterHumanMove = parseBoardState(damaEngine.getStatoScacchiera())
+                                            gameState = gameState.copy(pieces = piecesAfterHumanMove)
+                                            handleCaptureAnimation(pedinaCatturataUmano) // Avvia l'animazione della cattura (se c'è).
+
                                             val winnerAfterHumanMove = damaEngine.getVincitore()
                                             if (winnerAfterHumanMove == null) {
-                                                // 3. Esegui la mossa dell'IA
+                                                // Ora tocca all'IA.
                                                 val mossaIA = damaEngine.faiMossaIA()
                                                 if (mossaIA != null) {
                                                     Log.i("GameFlow", "IA risponde con: ${mossaIA.toString()}")
                                                     chatMessages = chatMessages + "Mossa IA: ${mossaIA.toString()}"
-                                                    // Animazione per la cattura dell'IA
                                                     val pedinaCatturataIA = damaEngine.trovaPedinaCatturata(mossaIA)
-                                                    updateUiWithAnimation(pedinaCatturataIA)
+
+                                                    // Aggiorniamo lo stato finale, incluse le catture obbligatorie, PRIMA dell'animazione.
+                                                    val finalPieces = parseBoardState(damaEngine.getStatoScacchiera())
+                                                    val mandatoryForHuman = damaEngine.getPezziConCatturaObbligatoria()
+                                                    gameState = gameState.copy(pieces = finalPieces, mandatoryCapturePieces = mandatoryForHuman)
+                                                    Log.d("GameFlow", "Stato aggiornato. Catture obbligatorie per umano: $mandatoryForHuman")
+
+                                                    handleCaptureAnimation(pedinaCatturataIA) // Avvia l'animazione della cattura dell'IA.
                                                 }
                                             }
                                         } else {
                                             Log.w("GameFlow", "Mossa umana RIFIUTATA: $moveString")
                                         }
 
-                                        // 4. Reset selezione e aggiornamento finale UI
+                                        // Resetta la selezione dopo il tentativo di mossa.
                                         selectedPieceCoords = null
                                         validMoveDestinations = emptyList()
-                                        val finalPieces = parseBoardState(damaEngine.getStatoScacchiera())
-                                        gameState = gameState.copy(pieces = finalPieces)
 
-                                        // 5. Controllo finale del vincitore
+                                        // Controlla il vincitore alla fine del turno.
                                         val winner = damaEngine.getVincitore()
                                         if (winner != null) {
                                             val winnerMessage = "Partita finita! Vince il ${winner.name}"
@@ -278,9 +297,10 @@ fun GameScreen(
                                         }
 
                                     } else {
+                                        // CASO 2: Nessun pezzo selezionato. L'utente sta selezionando un pezzo.
                                         if (pieceAtPos != null && pieceAtPos.color == PlayerColor.WHITE) {
                                             selectedPieceCoords = clickedPos
-                                            getValidMovesForSelectedPiece()
+                                            getValidMovesForSelectedPiece() // Calcola e mostra le mosse valide.
                                         }
                                     }
                                 }
@@ -293,7 +313,9 @@ fun GameScreen(
                 Spacer(Modifier.height(16.dp))
                 AIOpponentHeader(name = "Wialiam Sheaskeper", isThinking = false)
                 Divider(modifier = Modifier.padding(vertical = 12.dp))
-                ChatDisplayArea(messages = chatMessages, modifier = Modifier.fillMaxWidth().weight(1f))
+                ChatDisplayArea(messages = chatMessages, modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f))
                 ChatInputArea(modifier = Modifier.fillMaxWidth())
             }
         }
