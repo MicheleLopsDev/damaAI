@@ -37,6 +37,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import io.github.luposolitario.damaai.data.*
 import io.github.luposolitario.damaai.engine.GemmaEngine
+import io.github.luposolitario.damaai.game_logic.Posizione
 import io.github.luposolitario.damaai.screen.CreditsScreen
 import io.github.luposolitario.damaai.screen.CustomizationScreen
 import io.github.luposolitario.damaai.screen.GameBoardArea
@@ -299,6 +300,9 @@ fun GameScreen(
                                         val newPieces = gameState.pieces.map {
                                             if (it == selected) it.copy(row = row, col = col) else it
                                         }
+                                        val startPos = Posizione(selected.row, selected.col).toNotazioneAlgebrica()
+                                        val endPos = Posizione(row, col).toNotazioneAlgebrica()
+                                        chatMessages = chatMessages + "Mossa: ${startPos} -> ${endPos}"
                                         gameState = gameState.copy(
                                             pieces = newPieces,
                                             selectedPiece = null,
@@ -325,8 +329,6 @@ fun GameScreen(
                     Spacer(modifier = Modifier.width(24.dp))
                 }
                 Spacer(modifier = Modifier.height(4.dp))
-                BoardFiles() // Lettere in basso
-            }
 
             Spacer(Modifier.height(16.dp))
             AIOpponentHeader(
@@ -340,6 +342,9 @@ fun GameScreen(
                 modifier = Modifier.fillMaxWidth().weight(1f)
             )
             ChatInputArea(modifier = Modifier.fillMaxWidth())
+        }
+
+
         }
     }
 }
