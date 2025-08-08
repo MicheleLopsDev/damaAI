@@ -31,6 +31,7 @@ import androidx.navigation.compose.rememberNavController
 import io.github.luposolitario.damaai.data.*
 import io.github.luposolitario.damaai.engine.DamaEngine
 import io.github.luposolitario.damaai.engine.DamaEngineImpl
+import io.github.luposolitario.damaai.game_logic.Colore
 import io.github.luposolitario.damaai.game_logic.Difficolta
 import io.github.luposolitario.damaai.game_logic.Posizione
 import io.github.luposolitario.damaai.screen.CreditsScreen
@@ -38,6 +39,7 @@ import io.github.luposolitario.damaai.screen.CustomizationScreen
 import io.github.luposolitario.damaai.screen.GameBoardArea
 import io.github.luposolitario.damaai.screen.HelpScreen
 import io.github.luposolitario.damaai.screen.SettingsScreen
+import io.github.luposolitario.damaai.screen.VictoryScreen
 import io.github.luposolitario.damaai.ui.theme.DamaAITheme
 import io.github.luposolitario.damaai.viewmodels.SettingsViewModel
 import io.github.luposolitario.damaai.viewmodels.SettingsViewModelFactory
@@ -147,7 +149,7 @@ fun GameScreen(
     var gameState by remember { mutableStateOf(GameState(pieces = emptyList())) }
     var selectedPieceCoords by remember { mutableStateOf<Posizione?>(null) }
     var validMoveDestinations by remember { mutableStateOf<List<Posizione>>(emptyList()) }
-
+    var winner by remember { mutableStateOf<Colore?>(null) }
     val damaEngine: DamaEngine = remember { DamaEngineImpl() }
     val coroutineScope = rememberCoroutineScope()
     var chatMessages by remember { mutableStateOf<List<String>>(emptyList()) }
@@ -279,6 +281,13 @@ fun GameScreen(
                                                     handleCaptureAnimation(pedinaCatturataIA) // Avvia l'animazione della cattura dell'IA.
                                                 }
                                             }
+                                            damaEngine.getVincitore()?.let {
+                                                winner = it // <-- Imposta il vincitore
+                                                val winnerMessage = "Partita finita! Vince ${it.name}"
+                                                if (!chatMessages.contains(winnerMessage)) {
+                                                    chatMessages = chatMessages + winnerMessage
+                                                }
+                                            }
                                         } else {
                                             Log.w("GameFlow", "Mossa umana RIFIUTATA: $moveString")
                                         }
@@ -307,6 +316,20 @@ fun GameScreen(
                             },
                             modifier = Modifier.fillMaxSize()
                         )
+                        winner?.let { vincitore ->
+                            VictoryScreen(
+                                winner = vincitore,
+                                onPlayAgain = {
+                                    // Resetta lo stato per una nuova partita
+                                    damaEngine.nuovaPartita(Difficolta.FACILE)
+                                    val initialPieces = parseBoardState(damaEngine.getStatoScacchiera())
+                                    val initialMandatory = damaEngine.getPezziConCatturaObbligatoria()
+                                    gameState = gameState.copy(pieces = initialPieces, mandatoryCapturePieces = initialMandatory)
+                                    chatMessages = emptyList()
+                                    winner = null // Nasconde la schermata di vittoria
+                                }
+                            )
+                        }
                     }
                     Spacer(modifier = Modifier.width(24.dp))
                 }
