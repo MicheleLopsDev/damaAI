@@ -139,7 +139,9 @@ private fun convertPiecesToString(pieces: List<Piece>): String {
         }
         builder.append("\n")
     }
-    return builder.toString()
+    val boardString = builder.toString()
+    Log.d("BoardConversion", "Conversione scacchiera in stringa:\n$boardString")
+    return boardString
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -159,6 +161,23 @@ fun GameScreen(
 
     // --- NUOVO: Istanza del motore e gestione del suo ciclo di vita ---
     val gemmaEngine = remember { GemmaEngine() }
+
+    // LOG 1: Stampa le posizioni iniziali di tutti i pezzi
+    LaunchedEffect(Unit) {
+        Log.d("GamePieces", "--- Posizioni Iniziali dei Pezzi ---")
+        Log.d("GamePieces", "BIANCHI:")
+        initialPieces.filter { it.color == PlayerColor.WHITE }.forEach { piece ->
+            val pos = Posizione(piece.row, piece.col)
+            Log.d("GamePieces", "Pezzo: ${pos.toNotazioneAlgebrica()} (Raw: r=${piece.row}, c=${piece.col})")
+        }
+        Log.d("GamePieces", "NERI:")
+        initialPieces.filter { it.color == PlayerColor.BLACK }.forEach { piece ->
+            val pos = Posizione(piece.row, piece.col)
+            Log.d("GamePieces", "Pezzo: ${pos.toNotazioneAlgebrica()} (Raw: r=${piece.row}, c=${piece.col})")
+        }
+        Log.d("GamePieces", "------------------------------------")
+    }
+
 
     LaunchedEffect(Unit) {
         // Carica il modello quando il Composable entra nella composizione
@@ -293,16 +312,22 @@ fun GameScreen(
                             gameState = gameState,
                             playerTeamStyle = playerTeamStyle,
                             boardStyle = boardStyle,
+                            // LOG 3: Logga il processo di selezione e mossa
                             onSquareClick = { row, col ->
                                 val selected = gameState.selectedPiece
                                 if (selected != null) {
+                                    val startPosNot = Posizione(selected.row, selected.col).toNotazioneAlgebrica()
+                                    val endPosNot = Posizione(row, col).toNotazioneAlgebrica()
+                                    Log.d("MoveExecution", "Tentativo mossa da ${startPosNot} (r=${selected.row},c=${selected.col}) a ${endPosNot} (r=${row},c=${col})")
+
                                     if (isValidMove(selected, row, col, gameState.pieces)) {
+                                        Log.d("MoveExecution", "Mossa valida. Aggiornamento stato.")
                                         val newPieces = gameState.pieces.map {
                                             if (it == selected) it.copy(row = row, col = col) else it
                                         }
-                                        val startPos = Posizione(selected.row, selected.col).toNotazioneAlgebrica()
-                                        val endPos = Posizione(row, col).toNotazioneAlgebrica()
-                                        chatMessages = chatMessages + "Mossa: ${startPos} -> ${endPos}"
+                                        val moveMessage = "Mossa: $startPosNot -> $endPosNot"
+                                        Log.d("MoveExecution", "Messaggio chat generato: '$moveMessage'")
+                                        chatMessages = chatMessages + moveMessage
                                         gameState = gameState.copy(
                                             pieces = newPieces,
                                             selectedPiece = null,
@@ -310,12 +335,14 @@ fun GameScreen(
                                             turnElapsedTimeInSeconds = 0L
                                         )
                                     } else {
+                                        Log.d("MoveExecution", "Mossa NON valida.")
                                         gameState = gameState.copy(selectedPiece = null)
                                     }
                                 } else {
-                                    val clickedPiece =
-                                        gameState.pieces.find { it.row == row && it.col == col }
+                                    val clickedPiece = gameState.pieces.find { it.row == row && it.col == col }
                                     if (clickedPiece != null && clickedPiece.color == gameState.currentPlayer) {
+                                        val posNot = Posizione(clickedPiece.row, clickedPiece.col).toNotazioneAlgebrica()
+                                        Log.d("MoveExecution", "Pezzo selezionato in ${posNot} (r=${clickedPiece.row}, c=${clickedPiece.col})")
                                         gameState = gameState.copy(selectedPiece = clickedPiece)
                                     }
                                 }
