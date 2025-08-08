@@ -1,76 +1,90 @@
 package io.github.luposolitario.damaai.engine
 
+import android.util.Log
 import io.github.luposolitario.damaai.game_logic.*
 
 class DamaEngineImpl : DamaEngine {
 
-    // La nostra classe usa internamente la PartitaDiDama che abbiamo già creato.
-    // Viene inizializzata come 'null' e creata quando si chiama nuovaPartita.
     private var partita: PartitaDiDama? = null
+    private val TAG = "DamaEngineImpl"
 
     override fun nuovaPartita(difficolta: Difficolta) {
+        Log.d(TAG, "nuovaPartita chiamata con difficoltà: $difficolta")
         partita = PartitaDiDama(difficolta)
+        Log.d(TAG, "Partita creata. Stato iniziale scacchiera:\n${partita?.getStatoScacchiera()}")
     }
 
     override fun muoviPezzo(mossaGiocatore: String): String? {
-        val partitaCorrente = partita ?: return null // Se la partita non è iniziata, non fare nulla.
-
-        // 1. Controlla se c'è già un vincitore
-        if (partitaCorrente.getVincitore() != null) return null
-
-        // 2. Prova a "capire" la mossa dalla stringa
-        val mossa = parseMossa(mossaGiocatore) ?: return null // Formato mossa non valido
-
-        // 3. Esegui la mossa umana
-        val mossaUmanaRiuscita = partitaCorrente.eseguiMossaUmano(mossa)
-        if (!mossaUmanaRiuscita) {
-            return null // Mossa non valida secondo le regole
+        Log.d(TAG, "muoviPezzo chiamato con mossa: '$mossaGiocatore'")
+        val partitaCorrente = partita ?: run {
+            Log.e(TAG, "Errore: la partita non è stata inizializzata. Chiamare nuovaPartita() prima.")
+            return null
         }
 
-        // 4. Controlla se l'umano ha vinto
-        if (partitaCorrente.getVincitore() != null) return null
+        if (partitaCorrente.getVincitore() != null) {
+            Log.w(TAG, "La partita è già terminata. Impossibile muovere.")
+            return null
+        }
 
-        // 5. Fai giocare l'IA
+        val mossa = parseMossa(mossaGiocatore)
+        if (mossa == null) {
+            Log.w(TAG, "Formato mossa non valido: '$mossaGiocatore'")
+            return null
+        }
+
+        Log.d(TAG, "Stato scacchiera PRIMA della mossa umana:\n${partitaCorrente.getStatoScacchiera()}")
+        val mossaUmanaRiuscita = partitaCorrente.eseguiMossaUmano(mossa)
+        if (!mossaUmanaRiuscita) {
+            Log.w(TAG, "Mossa umana non valida: $mossaGiocatore")
+            return null
+        }
+        Log.d(TAG, "Mossa umana ESEGUITA. Stato scacchiera DOPO:\n${partitaCorrente.getStatoScacchiera()}")
+
+        if (partitaCorrente.getVincitore() != null) {
+            Log.i(TAG, "L'umano ha vinto!")
+            return null
+        }
+
+        Log.d(TAG, "Tocca all'IA. Faccio giocare l'IA...")
         val mossaIA = partitaCorrente.faiMossaIA()
+        Log.d(TAG, "Mossa IA eseguita. Stato scacchiera FINALE:\n${partitaCorrente.getStatoScacchiera()}")
 
-        // 6. Controlla se l'IA ha vinto e restituisci la sua mossa come stringa
         return mossaIA?.toString()
     }
 
     override fun getVincitore(): Colore? {
-        return partita?.getVincitore()
+        val vincitore = partita?.getVincitore()
+        Log.d(TAG, "getVincitore chiamato. Vincitore: $vincitore")
+        return vincitore
     }
 
     override fun getStatoScacchiera(): String {
-        return partita?.getStatoScacchiera() ?: "Partita non iniziata."
+        val stato = partita?.getStatoScacchiera() ?: "Partita non iniziata."
+        Log.d(TAG, "getStatoScacchiera chiamato.")
+        return stato
     }
 
     override fun getMosseValide(): List<String> {
-        return partita?.getMosseValide()?.map { it.toString() } ?: emptyList()
+        val mosse = partita?.getMosseValide()?.map { it.toString() } ?: emptyList()
+        Log.d(TAG, "getMosseValide chiamato. Trovate ${mosse.size} mosse valide: $mosse")
+        Log.d(TAG, "Stato scacchiera attuale per cui sono state calcolate le mosse:\n${partita?.getStatoScacchiera()}")
+        return mosse
     }
 
-    /**
-     * Funzione privata per convertire una stringa come "C7 B6" in un oggetto Mossa.
-     */
     private fun parseMossa(notazione: String): Mossa? {
         val parti = notazione.trim().uppercase().split(" ")
-        if (parti.size != 2) return null // Il formato deve essere "PARTENZA ARRIVO"
+        if (parti.size != 2) return null
 
         val partenza = fromNotazioneAlgebrica(parti[0])
         val arrivo = fromNotazioneAlgebrica(parti[1])
 
         return if (partenza != null && arrivo != null) {
-            // Per ora non conosciamo il pezzo catturato, il MotoreDiGioco lo troverà
-            // confrontando questa mossa con la lista di quelle valide.
             Mossa(partenza, arrivo)
         } else {
             null
         }
     }
 
-    /**
-     * Funzione privata per convertire una notazione come "A1" in un oggetto Posizione.
-     */
     private fun fromNotazioneAlgebrica(notazione: String): Posizione? {
         if (notazione.length != 2) return null
         val colonnaChar = notazione[0]
@@ -79,7 +93,7 @@ class DamaEngineImpl : DamaEngine {
         if (colonnaChar !in 'A'..'H' || rigaChar !in '1'..'8') return null
 
         val colonna = colonnaChar - 'A'
-        val riga = rigaChar - '1'
+        val riga = '8' - rigaChar // Correzione per allineare '8' alla riga 0
         return Posizione(riga, colonna)
     }
 }
