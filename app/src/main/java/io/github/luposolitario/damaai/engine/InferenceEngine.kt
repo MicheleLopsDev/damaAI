@@ -33,7 +33,7 @@ interface InferenceEngine {
      * @param bitmap L'immagine della scacchiera da analizzare.
      * @return Un Flow che emette la risposta dell'IA in chunk.
      */
-    fun generateMove(prompt: String, bitmap: Bitmap): Flow<String>
+//    fun generateMove(prompt: String, bitmap: Bitmap): Flow<String>
 
     suspend fun resetSession()
 

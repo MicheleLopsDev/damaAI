@@ -9,6 +9,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -111,6 +113,34 @@ fun AppNavigation(settingsViewModel: SettingsViewModel) {
     }
 }
 
+/**
+ * Converte la lista di pedine della UI in una rappresentazione testuale
+ * simile a quella del motore di gioco, per passarla a Gemma.
+ */
+private fun convertPiecesToString(pieces: List<Piece>): String {
+    val board = Array(8) { Array<String?>(8) { null } }
+    pieces.forEach { piece ->
+        val symbol = when (piece.color) {
+            PlayerColor.WHITE -> "b" // "b" per bianco (bottom)
+            PlayerColor.BLACK -> "n" // "n" per nero (north)
+        }
+        board[piece.row][piece.col] = symbol
+    }
+
+    val builder = StringBuilder()
+    builder.append("  A B C D E F G H\n")
+    for (riga in 0..7) {
+        builder.append("${riga + 1} ")
+        for (colonna in 0..7) {
+            val pezzo = board[riga][colonna]
+            val simbolo = pezzo ?: if ((riga + colonna) % 2 != 0) "." else " "
+            builder.append("$simbolo ")
+        }
+        builder.append("\n")
+    }
+    return builder.toString()
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GameScreen(
@@ -123,6 +153,8 @@ fun GameScreen(
     val view = LocalView.current
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+    var chatMessages by remember { mutableStateOf(listOf<String>()) }
+    var isAiThinking by remember { mutableStateOf(false) }
 
     // --- NUOVO: Istanza del motore e gestione del suo ciclo di vita ---
     val gemmaEngine = remember { GemmaEngine() }
@@ -159,38 +191,58 @@ fun GameScreen(
             TopAppBar(
                 title = { Text("damaAI") },
                 actions = {
+
+
+                    // NUOVO CODICE PER L'ICONBUTTON
                     IconButton(onClick = {
+                        if (isAiThinking) return@IconButton
+
+                        // Controlliamo che le coordinate della scacchiera siano state registrate
                         boardCoordinates?.let { coords ->
+                            // Calcoliamo il rettangolo esatto da catturare
                             val rectInWindow = Rect(
                                 offset = coords.positionInWindow(),
                                 size = coords.size.toSize()
                             )
+
+                            // Avviamo la logica di cattura e analisi
                             captureViewAsBitmap(view, rectInWindow) { bitmap ->
                                 if (bitmap != null) {
-                                    Log.d("Capture", "Bitmap catturato. Avvio inferenza...")
-                                    // --- NUOVO: Chiama il motore con il bitmap ---
-                                    val testPrompt =
-                                        "Sei un esperto di dama. Analizza l'immagine e descrivi cosa vedi."
                                     coroutineScope.launch {
-                                        val fullResponse = StringBuilder()
-                                        gemmaEngine.generateMove(testPrompt, bitmap)
-                                            .collect { responseChunk ->
-                                                fullResponse.append(responseChunk)
-                                                Log.d(
-                                                    "GemmaEngine",
-                                                    "Chunk ricevuto: $responseChunk"
-                                                )
+                                        isAiThinking = true
+                                        val analysisPrompt = "L'immagine che stai vedendo contiene una scacchiera di dama , ci sono delle etichette numeriche a sinistra " +
+                                                "e delle etichette alfanumeriche in alto leggile ed elencale, incrocia righe e colonne e dimmi se c'è una pedina e di che colore è "
+
+                                        try {
+                                            val fullResponse = StringBuilder()
+                                            // --- USIAMO LA FUNZIONE CORRETTA CON IL BITMAP ---
+//                                            gemmaEngine.generateMove(analysisPrompt, bitmap)
+//                                                .collect { responseChunk ->
+//                                                    fullResponse.append(responseChunk)
+//                                                }
+
+                                            if (fullResponse.isNotBlank()) {
+                                                chatMessages = chatMessages + fullResponse.toString()
                                             }
-                                        Log.d("GemmaEngine", "Risposta completa: $fullResponse")
+                                            Log.d("GameScreen", chatMessages.toString())
+                                        } catch (e: Exception) {
+                                            Log.e("GameScreen", "Errore durante l'analisi di Gemma: ${e.message}", e)
+                                            chatMessages = chatMessages + "Errore del motore IA: ${e.message}"
+                                        } finally {
+                                            isAiThinking = false
+                                        }
                                     }
                                 } else {
-                                    Log.e("Capture", "Impossibile catturare il bitmap.")
+                                    Log.e("Capture", "Impossibile catturare il bitmap della scacchiera.")
+                                    chatMessages = chatMessages + "Errore: Impossibile analizzare la scacchiera."
                                 }
                             }
                         }
                     }) {
-                        Icon(Icons.Default.PhotoCamera, contentDescription = "Cattura Scacchiera e Testa IA")
+                        Icon(Icons.Default.PhotoCamera, contentDescription = "Analizza Partita con IA")
                     }
+
+
                     IconButton(onClick = {
                         navController.navigate("settings_screen")
                     }) {
@@ -277,41 +329,71 @@ fun GameScreen(
             }
 
             Spacer(Modifier.height(16.dp))
-            AIOpponentHeader(name = "Wialiam Sheaskeper")
+            AIOpponentHeader(
+                name = "Wialiam Sheaskeper",
+                isThinking = isAiThinking // Passiamo lo stato di "pensiero"
+            )
             Divider(modifier = Modifier.padding(vertical = 12.dp))
-            ChatDisplayArea(modifier = Modifier.fillMaxWidth().weight(1f))
+            // NUOVO ChatDisplayArea
+            ChatDisplayArea(
+                messages = chatMessages, // Passiamo la lista dei messaggi
+                modifier = Modifier.fillMaxWidth().weight(1f)
+            )
             ChatInputArea(modifier = Modifier.fillMaxWidth())
         }
     }
 }
 
 @Composable
-fun AIOpponentHeader(name: String, modifier: Modifier = Modifier) {
+fun AIOpponentHeader(name: String, isThinking: Boolean, modifier: Modifier = Modifier) { // Aggiunto isThinking
     Row(
         modifier = modifier
             .fillMaxWidth()
             .padding(start = 8.dp, end = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Image(imageVector = Icons.Default.AccountCircle, contentDescription = "Avatar dell'avversario AI", modifier = Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant))
+        Image(
+            imageVector = Icons.Default.AccountCircle,
+            contentDescription = "Avatar dell'avversario AI",
+            modifier = Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant)
+        )
         Spacer(modifier = Modifier.width(12.dp))
         Column {
             Text(text = name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Text(text = "Sta scrivendo...", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            // Mostra "Sta pensando..." o "Online" in base allo stato
+            val statusText = if (isThinking) "Sta pensando..." else "Online"
+            val statusColor = if (isThinking) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+            Text(text = statusText, style = MaterialTheme.typography.bodySmall, color = statusColor)
         }
     }
 }
 
 @Composable
-fun ChatDisplayArea(modifier: Modifier = Modifier) {
-    Box(
+fun ChatDisplayArea(messages: List<String>, modifier: Modifier = Modifier) { // Aggiunto messages
+    LazyColumn( // Usiamo LazyColumn per mostrare una lista di messaggi scorrevole
         modifier = modifier
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
             .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
             .padding(8.dp),
-        contentAlignment = Alignment.TopStart
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Text("I messaggi della chat appariranno qui...")
+        if (messages.isEmpty()) {
+            item {
+                Text(
+                    text = "Tocca l'icona 📷 in alto per chiedere un'analisi della partita all'IA.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        } else {
+            items(messages) { message ->
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }
     }
 }
 

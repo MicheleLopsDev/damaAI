@@ -54,6 +54,7 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.foundation)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -71,7 +72,7 @@ dependencies {
 
     // Per l'inferenza On-Device con MediaPipe
     implementation(libs.tasks.genai)
-    implementation(libs.tasks.vision)
+//    implementation(libs.tasks.vision)
 
 
     // Aggiungiamo una libreria per fare richieste HTTP nel worker
