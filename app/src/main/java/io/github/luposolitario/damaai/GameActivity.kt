@@ -36,7 +36,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import io.github.luposolitario.damaai.data.*
+import io.github.luposolitario.damaai.engine.DamaEngineImpl
 import io.github.luposolitario.damaai.engine.GemmaEngine
+import io.github.luposolitario.damaai.game_logic.Difficolta
 import io.github.luposolitario.damaai.game_logic.Posizione
 import io.github.luposolitario.damaai.screen.CreditsScreen
 import io.github.luposolitario.damaai.screen.CustomizationScreen
@@ -159,12 +161,28 @@ fun GameScreen(
     var chatMessages by remember { mutableStateOf(listOf<String>()) }
     var isAiThinking by remember { mutableStateOf(false) }
 
-    // --- NUOVO: Istanza del motore e gestione del suo ciclo di vita ---
+    // --- Motori di IA e di Gioco ---
     val gemmaEngine = remember { GemmaEngine() }
+    val damaEngine = remember { DamaEngineImpl() } // Aggiunta del motore di gioco
 
-    // LOG 1: Stampa le posizioni iniziali di tutti i pezzi
+    // Effetto lanciato una sola volta all'avvio della schermata
     LaunchedEffect(Unit) {
-        Log.d("GamePieces", "--- Posizioni Iniziali dei Pezzi ---")
+        // 1. Carica il modello di IA
+        try {
+            val modelFile = File(context.filesDir, "gemma-3n-E4B-it-int4.task")
+            gemmaEngine.load(context, modelFile.absolutePath)
+        } catch (e: Exception) {
+            Log.e("GameScreen", "Errore durante il caricamento del modello IA: ${e.message}")
+        }
+
+        // 2. Avvia una nuova partita con il motore di gioco
+        damaEngine.nuovaPartita(Difficolta.FACILE)
+        val statoScacchiera = damaEngine.getStatoScacchiera()
+        Log.d("DamaEngine", "--- Partita avviata con DamaEngine ---")
+        Log.d("DamaEngine", "Stato iniziale della scacchiera restituito dal motore:\n$statoScacchiera")
+
+        // 3. Log delle posizioni iniziali (per la UI attuale)
+        Log.d("GamePieces", "--- Posizioni Iniziali dei Pezzi (UI) ---")
         Log.d("GamePieces", "BIANCHI:")
         initialPieces.filter { it.color == PlayerColor.WHITE }.forEach { piece ->
             val pos = Posizione(piece.row, piece.col)
@@ -178,21 +196,8 @@ fun GameScreen(
         Log.d("GamePieces", "------------------------------------")
     }
 
-
-    LaunchedEffect(Unit) {
-        // Carica il modello quando il Composable entra nella composizione
-        try {
-            val modelFile = File(context.filesDir, "gemma-3n-E4B-it-int4.task")
-            gemmaEngine.load(context, modelFile.absolutePath)
-        } catch (e: Exception) {
-            Log.e("GameScreen", "Errore durante il caricamento del modello IA: ${e.message}")
-            // Potresti mostrare un messaggio all'utente qui
-        }
-    }
-
     DisposableEffect(Unit) {
         onDispose {
-            // Rilascia le risorse quando il Composable viene rimosso
             coroutineScope.launch {
                 gemmaEngine.unload()
             }
@@ -312,7 +317,6 @@ fun GameScreen(
                             gameState = gameState,
                             playerTeamStyle = playerTeamStyle,
                             boardStyle = boardStyle,
-                            // LOG 3: Logga il processo di selezione e mossa
                             onSquareClick = { row, col ->
                                 val selected = gameState.selectedPiece
                                 if (selected != null) {
@@ -344,6 +348,13 @@ fun GameScreen(
                                         val posNot = Posizione(clickedPiece.row, clickedPiece.col).toNotazioneAlgebrica()
                                         Log.d("MoveExecution", "Pezzo selezionato in ${posNot} (r=${clickedPiece.row}, c=${clickedPiece.col})")
                                         gameState = gameState.copy(selectedPiece = clickedPiece)
+
+                                        // --- NUOVA LOGICA ---
+                                        // Ora che il pezzo è selezionato, chiediamo al motore le mosse valide
+                                        val mosseValide = damaEngine.getMosseValide()
+                                        Log.d("DamaEngine", "Mosse valide per il pezzo selezionato (${posNot}): $mosseValide")
+                                        // Nota: Per ora, stampiamo solo le mosse nel log.
+                                        // Il prossimo passo sarà visualizzarle sulla UI.
                                     }
                                 }
                             },
@@ -357,19 +368,19 @@ fun GameScreen(
                 }
                 Spacer(modifier = Modifier.height(4.dp))
 
-            Spacer(Modifier.height(16.dp))
-            AIOpponentHeader(
-                name = "Wialiam Sheaskeper",
-                isThinking = isAiThinking // Passiamo lo stato di "pensiero"
-            )
-            Divider(modifier = Modifier.padding(vertical = 12.dp))
-            // NUOVO ChatDisplayArea
-            ChatDisplayArea(
-                messages = chatMessages, // Passiamo la lista dei messaggi
-                modifier = Modifier.fillMaxWidth().weight(1f)
-            )
-            ChatInputArea(modifier = Modifier.fillMaxWidth())
-        }
+                Spacer(Modifier.height(16.dp))
+                AIOpponentHeader(
+                    name = "Wialiam Sheaskeper",
+                    isThinking = isAiThinking // Passiamo lo stato di "pensiero"
+                )
+                Divider(modifier = Modifier.padding(vertical = 12.dp))
+                // NUOVO ChatDisplayArea
+                ChatDisplayArea(
+                    messages = chatMessages, // Passiamo la lista dei messaggi
+                    modifier = Modifier.fillMaxWidth().weight(1f)
+                )
+                ChatInputArea(modifier = Modifier.fillMaxWidth())
+            }
 
 
         }

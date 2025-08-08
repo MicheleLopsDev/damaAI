@@ -60,7 +60,7 @@ class DamaEngineImpl : DamaEngine {
 
     override fun getStatoScacchiera(): String {
         val stato = partita?.getStatoScacchiera() ?: "Partita non iniziata."
-        Log.d(TAG, "getStatoScacchiera chiamato.")
+        Log.d(TAG, "getStatoScacchiera chiamato: $stato")
         return stato
     }
 
