@@ -173,6 +173,12 @@ fun GameScreen(
         availableOpponents.find { it.teamStyleId == playerTeamStyle.id }
     }
 
+    val aiTeamStyle: TeamStyle? = remember(aiOpponent) {
+        aiOpponent?.let { opponent ->
+            availableTeamStyles.find { it.id == opponent.teamStyleId }
+        }
+    }
+
     val coroutineScope = rememberCoroutineScope()
     val context = LocalView.current.context
 
@@ -295,6 +301,7 @@ fun GameScreen(
                         GameBoardArea(
                             gameState = gameState,
                             playerTeamStyle = playerTeamStyle,
+                            aiTeamStyle = aiTeamStyle,
                             boardStyle = boardStyle,
                             selectedSquare = selectedPieceCoords,
                             validMoveSquares = validMoveDestinations,

@@ -36,6 +36,7 @@ import kotlin.math.sin
 fun GameBoardArea(
     gameState: GameState,
     playerTeamStyle: TeamStyle,
+    aiTeamStyle: TeamStyle?,
     boardStyle: BoardStyle,
     selectedSquare: Posizione?,
     validMoveSquares: List<Posizione>,
@@ -44,6 +45,12 @@ fun GameBoardArea(
 ) {
     val playerPainter: Painter? = if (playerTeamStyle.id != "default") {
         painterResource(id = playerTeamStyle.flagResId)
+    } else {
+        null
+    }
+
+    val aiPainter: Painter? = if (aiTeamStyle?.id != "default") {
+        aiTeamStyle?.let { painterResource(id = it.flagResId) }
     } else {
         null
     }
@@ -140,21 +147,18 @@ fun GameBoardArea(
 
             // Logica per disegnare la pedina (con bandiera o standard)
             if (piece.color == PlayerColor.WHITE) {
-                if (playerPainter != null) {
-                    drawCircle(color = Color.White.copy(alpha = alpha), radius = pieceRadius, center = center)
+                drawCircle(color = Color.White.copy(alpha = alpha), radius = pieceRadius, center = center)
+                drawCircle(color = Color(0xFFBBBBBB).copy(alpha = alpha), radius = pieceRadius, center = center, style = Stroke(width = squareSize * 0.04f))
+            } else {
+                drawCircle(color = Color(0xFF222222).copy(alpha = alpha), radius = pieceRadius, center = center)
+                if (aiPainter != null) {
                     val clipPath = Path().apply { addOval(Rect(center = center, radius = pieceRadius)) }
                     clipPath(path = clipPath) {
                         translate(left = center.x - pieceRadius, top = center.y - pieceRadius) {
-                            with(playerPainter) { draw(size = Size(pieceRadius * 2, pieceRadius * 2), alpha = alpha) }
+                            with(aiPainter) { draw(size = Size(pieceRadius * 2, pieceRadius * 2), alpha = alpha) }
                         }
                     }
-                    drawCircle(color = Color(0xFFBBBBBB).copy(alpha = alpha), radius = pieceRadius, center = center, style = Stroke(width = squareSize * 0.04f))
-                } else {
-                    drawCircle(color = Color.White.copy(alpha = alpha), radius = pieceRadius, center = center)
-                    drawCircle(color = Color(0xFFBBBBBB).copy(alpha = alpha), radius = pieceRadius, center = center, style = Stroke(width = squareSize * 0.04f))
                 }
-            } else {
-                drawCircle(color = Color(0xFF222222).copy(alpha = alpha), radius = pieceRadius, center = center)
                 drawCircle(color = Color.Black.copy(alpha = alpha), radius = pieceRadius, center = center, style = Stroke(width = squareSize * 0.04f))
             }
 
