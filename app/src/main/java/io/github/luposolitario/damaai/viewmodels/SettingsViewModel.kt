@@ -57,6 +57,18 @@ class SettingsViewModel(
         }
     }
 
+    val classicMusicId: StateFlow<String> = settingsManager.classicMusicIdFlow
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = "classic_1"
+        )
+
+    fun setClassicMusicId(musicId: String) {
+        viewModelScope.launch {
+            settingsManager.setClassicMusicId(musicId)
+        }
+    }
 }
 
 

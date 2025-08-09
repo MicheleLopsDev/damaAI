@@ -41,6 +41,7 @@ import io.github.luposolitario.damaai.game_logic.Posizione
 import io.github.luposolitario.damaai.screen.*
 import io.github.luposolitario.damaai.ui.screen.OptionsScreen
 import io.github.luposolitario.damaai.ui.theme.DamaAITheme
+import io.github.luposolitario.damaai.utils.MusicManager
 import io.github.luposolitario.damaai.viewmodels.SettingsViewModel
 import io.github.luposolitario.damaai.viewmodels.SettingsViewModelFactory
 import io.github.luposolitario.lonewolfredux.datastore.ModelSettingsManager
@@ -164,9 +165,12 @@ fun GameScreen(
 
     val damaEngine: DamaEngine = remember { DamaEngineImpl() }
     val gemmaEngine = remember { GemmaEngine() }
+    val context = LocalView.current.context
+    val musicManager = remember { MusicManager(context) }
 
     // ---- LEGGIAMO LA DIFFICOLTÀ DAL VIEWMODEL ----
     val selectedDifficulty by settingsViewModel.difficultyLevel.collectAsState()
+    val selectedClassicMusicId by settingsViewModel.classicMusicId.collectAsState()
 
 
     val aiOpponent: AiOpponent? = remember(playerTeamStyle.id) {
@@ -180,7 +184,18 @@ fun GameScreen(
     }
 
     val coroutineScope = rememberCoroutineScope()
-    val context = LocalView.current.context
+
+    DisposableEffect(Unit) {
+        onDispose {
+            musicManager.stop()
+        }
+    }
+
+    LaunchedEffect(winner) {
+        if (winner != null) {
+            musicManager.stop()
+        }
+    }
 
     fun generateComment(prompt: String, onResult: (String) -> Unit) {
         aiOpponent ?: return
@@ -239,6 +254,14 @@ fun GameScreen(
         val initialMandatory = damaEngine.getPezziConCatturaObbligatoria()
         gameState = gameState.copy(pieces = initialPieces, mandatoryCapturePieces = initialMandatory)
         turnoCorrente = damaEngine.getTurnoCorrente()
+
+        // Avvia la musica di sottofondo
+        val musicToPlay = if (playerTeamStyle.id == "default") {
+            availableClassicMusic.find { it.id == selectedClassicMusicId }?.musicResId
+        } else {
+            playerTeamStyle.anthemResId
+        }
+        musicToPlay?.let { musicManager.start(it) }
 
         if (aiOpponent != null) {
             try {

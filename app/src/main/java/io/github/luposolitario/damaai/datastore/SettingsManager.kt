@@ -22,6 +22,7 @@ class SettingsManager(private val context: Context) {
         val BOARD_STYLE_ID = stringPreferencesKey("board_style_id")
         // --- NUOVA CHIAVE PER LA DIFFICOLTÀ ---
         val DIFFICULTY_LEVEL = stringPreferencesKey("difficulty_level")
+        val CLASSIC_MUSIC_ID = stringPreferencesKey("classic_music_id")
     }
 
     // --- Gestione Tema Scuro (invariata) ---
@@ -61,6 +62,17 @@ class SettingsManager(private val context: Context) {
     suspend fun setDifficultyLevel(level: String) {
         context.dataStore.edit { preferences ->
             preferences[DIFFICULTY_LEVEL] = level
+        }
+    }
+
+    val classicMusicIdFlow: Flow<String> = context.dataStore.data
+        .map { preferences ->
+            preferences[CLASSIC_MUSIC_ID] ?: "classic_1"
+        }
+
+    suspend fun setClassicMusicId(musicId: String) {
+        context.dataStore.edit { preferences ->
+            preferences[CLASSIC_MUSIC_ID] = musicId
         }
     }
 }

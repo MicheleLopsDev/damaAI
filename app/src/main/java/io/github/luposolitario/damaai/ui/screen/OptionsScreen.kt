@@ -23,6 +23,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import io.github.luposolitario.damaai.data.availableClassicMusic
 import io.github.luposolitario.damaai.data.availableOpponents
 import io.github.luposolitario.damaai.data.availableTeamStyles
 import io.github.luposolitario.damaai.viewmodels.SettingsViewModel
@@ -35,6 +36,7 @@ fun OptionsScreen(
 ) {
     val selectedDifficulty by settingsViewModel.difficultyLevel.collectAsState()
     val selectedTeamStyleId by settingsViewModel.playerTeamStyleId.collectAsState()
+    val selectedClassicMusicId by settingsViewModel.classicMusicId.collectAsState()
 
     Scaffold(
         topBar = {
@@ -136,6 +138,35 @@ fun OptionsScreen(
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Light
                         )
+                    }
+                }
+            }
+
+            if (selectedTeamStyleId == "default") {
+                item {
+                    Divider(modifier = Modifier.padding(vertical = 16.dp))
+                }
+                item {
+                    Text(
+                        text = "Scegli la musica per la modalità Classica:",
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                }
+                items(availableClassicMusic) { music ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { settingsViewModel.setClassicMusicId(music.id) }
+                            .padding(vertical = 4.dp)
+                    ) {
+                        RadioButton(
+                            selected = selectedClassicMusicId == music.id,
+                            onClick = { settingsViewModel.setClassicMusicId(music.id) }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(music.name)
                     }
                 }
             }
