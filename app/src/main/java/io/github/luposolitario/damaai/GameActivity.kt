@@ -22,6 +22,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -48,6 +51,12 @@ import io.github.luposolitario.lonewolfredux.datastore.ModelSettingsManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.launch
+import android.content.Intent
+import android.graphics.Bitmap
+import android.net.Uri
+import androidx.core.content.FileProvider
+import java.io.File
+import java.io.FileOutputStream
 
 class GameActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -63,6 +72,22 @@ class GameActivity : ComponentActivity() {
                 AppNavigation(settingsViewModel = settingsViewModel)
             }
         }
+    }
+}
+
+private fun saveBitmapAndGetUri(context: android.content.Context, bitmap: Bitmap): Uri? {
+    val imagesFolder = File(context.cacheDir, "images")
+    return try {
+        imagesFolder.mkdirs()
+        val file = File(imagesFolder, "shared_image.png")
+        val stream = FileOutputStream(file)
+        bitmap.compress(Bitmap.CompressFormat.PNG, 90, stream)
+        stream.flush()
+        stream.close()
+        FileProvider.getUriForFile(context, context.packageName + ".provider", file)
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
     }
 }
 
@@ -155,6 +180,7 @@ fun GameScreen(
     settingsViewModel: SettingsViewModel // <-- AGGIUNTO VIEWMODEL
 ) {
     val context = LocalView.current.context
+    val view = LocalView.current
 
     // --- Leggiamo le impostazioni musicali ---
     val musicVolume by settingsViewModel.musicVolume.collectAsState()
@@ -170,6 +196,7 @@ fun GameScreen(
     var finalAiComment by remember { mutableStateOf<String?>(null) }
     var isAiThinking by remember { mutableStateOf(false) }
     var turnoCorrente by remember { mutableStateOf(Colore.BIANCO) }
+    var boardCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
 
     val damaEngine: DamaEngine = remember { DamaEngineImpl() }
     val gemmaEngine = remember { GemmaEngine() }
@@ -311,6 +338,47 @@ fun GameScreen(
             TopAppBar(
                 title = { Text("damaAI") },
                 actions = {
+                    IconButton(onClick = {
+                        coroutineScope.launch {
+                            boardCoordinates?.let { coordinates ->
+                                val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+                                val canvas = android.graphics.Canvas(bitmap)
+                                view.draw(canvas)
+
+                                val offset = coordinates.positionInWindow()
+                                val size = coordinates.size
+                                val croppedBitmap = Bitmap.createBitmap(
+                                    bitmap,
+                                    offset.x.toInt(),
+                                    offset.y.toInt(),
+                                    size.width,
+                                    size.height
+                                )
+
+                                val uri = saveBitmapAndGetUri(context, croppedBitmap)
+                                uri?.let {
+                                    val riepilogoMosse = chatMessages.takeLast(4).joinToString("\n")
+                                    val callToAction = if (turnoCorrente == Colore.BIANCO) {
+                                        "È il tuo turno, Bianco! Fai la tua mossa."
+                                    } else {
+                                        "È il tuo turno, Nero! Dimmi le tue mosse."
+                                    }
+                                    val testoCompleto = "$riepilogoMosse\n\n$callToAction"
+
+                                    val intent = Intent(Intent.ACTION_SEND).apply {
+                                        type = "image/png"
+                                        putExtra(Intent.EXTRA_STREAM, it)
+                                        putExtra(Intent.EXTRA_TEXT, testoCompleto)
+                                        //setPackage("com.whatsapp")
+                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    }
+                                    context.startActivity(Intent.createChooser(intent, "Condividi partita con..."))
+                                }
+                            }
+                        }
+                    }) {
+                        Icon(Icons.Default.Share, contentDescription = "Condividi Partita")
+                    }
                     IconButton(onClick = { navController.navigate("settings_screen") }) {
                         Icon(Icons.Default.Settings, contentDescription = "Impostazioni")
                     }
@@ -328,7 +396,8 @@ fun GameScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f),
+                    .weight(1f)
+                    .onGloballyPositioned { boardCoordinates = it },
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 BoardFiles()
