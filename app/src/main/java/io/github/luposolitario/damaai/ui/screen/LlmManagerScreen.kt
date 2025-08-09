@@ -109,45 +109,6 @@ fun LlmManagerScreen(
                         }
                     }
                 }
-
-                Divider(modifier = Modifier.padding(vertical = 8.dp))
-
-                Text(
-                    text = "Parametri di Inferenza (Gemma)",
-                    style = MaterialTheme.typography.titleLarge
-                )
-
-                OutlinedTextField(
-                    value = uiState.temperature,
-                    onValueChange = viewModel::onTemperatureChanged,
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Temperatura (es. 0.9)") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                )
-
-                OutlinedTextField(
-                    value = uiState.topK,
-                    onValueChange = viewModel::onTopKChanged,
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Top-K (es. 50)") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                )
-
-                OutlinedTextField(
-                    value = uiState.topP,
-                    onValueChange = viewModel::onTopPChanged,
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Top-P (es. 1.0)") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                )
-
-                OutlinedTextField(
-                    value = uiState.maxLength,
-                    onValueChange = viewModel::onMaxLengthChanged,
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Lunghezza Massima Risposta") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                )
             }
         }
     }
