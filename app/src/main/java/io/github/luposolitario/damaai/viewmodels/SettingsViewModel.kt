@@ -1,5 +1,6 @@
 package io.github.luposolitario.damaai.viewmodels
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -84,6 +85,7 @@ class SettingsViewModel(
     // --- NUOVO: Funzione per salvare la canzone classica selezionata ---
     fun setClassicSongId(songId: String) {
         viewModelScope.launch {
+            Log.d("MusicDebug", "SALVATAGGIO: L'utente ha selezionato la canzone con ID: $songId")
             settingsManager.setClassicSongId(songId)
         }
     }

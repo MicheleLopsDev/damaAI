@@ -188,6 +188,7 @@ fun GameScreen(
         }
     }
 
+
     val coroutineScope = rememberCoroutineScope()
 
     fun getTrackIdByName(name: String): Int? {
@@ -248,6 +249,21 @@ fun GameScreen(
         validMoveDestinations = movesForPiece
     }
 
+    LaunchedEffect(teamStyleId, classicSongId) {
+        MusicManager.setVolume(musicVolume)
+        val songToPlayId = if (teamStyleId == "default") {
+            classicSongId // Usa la canzone classica salvata
+        } else {
+            teamStyleId   // Usa l'inno nazionale
+        }
+
+        Log.d("MusicDebug", "EFFECT MUSICALE: Canzone da riprodurre: $songToPlayId")
+        getTrackIdByName(songToPlayId)?.let { trackId ->
+            MusicManager.setVolume(musicVolume)
+            MusicManager.play(context, trackId)
+        }
+    }
+
     LaunchedEffect(playerTeamStyle.id) {
         chatMessages = emptyList()
         winner = null
@@ -264,14 +280,6 @@ fun GameScreen(
         val initialMandatory = damaEngine.getPezziConCatturaObbligatoria()
         gameState = gameState.copy(pieces = initialPieces, mandatoryCapturePieces = initialMandatory)
         turnoCorrente = damaEngine.getTurnoCorrente()
-
-        // --- Avvia la musica di gioco ---
-        MusicManager.setVolume(musicVolume)
-        val songToPlayId = if (teamStyleId == "default") classicSongId else teamStyleId
-        getTrackIdByName(songToPlayId)?.let { trackId ->
-            MusicManager.play(context, trackId)
-        }
-
 
         if (aiOpponent != null) {
             try {
