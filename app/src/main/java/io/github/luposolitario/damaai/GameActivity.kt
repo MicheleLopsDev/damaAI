@@ -38,6 +38,7 @@ import io.github.luposolitario.damaai.engine.GemmaEngine
 import io.github.luposolitario.damaai.game_logic.Colore
 import io.github.luposolitario.damaai.game_logic.Difficolta
 import io.github.luposolitario.damaai.game_logic.Posizione
+import io.github.luposolitario.damaai.media.MusicManager
 import io.github.luposolitario.damaai.screen.*
 import io.github.luposolitario.damaai.ui.screen.OptionsScreen
 import io.github.luposolitario.damaai.ui.theme.DamaAITheme
@@ -153,6 +154,14 @@ fun GameScreen(
     boardStyle: BoardStyle,
     settingsViewModel: SettingsViewModel // <-- AGGIUNTO VIEWMODEL
 ) {
+    val context = LocalView.current.context
+
+    // --- Leggiamo le impostazioni musicali ---
+    val musicVolume by settingsViewModel.musicVolume.collectAsState()
+    val classicSongId by settingsViewModel.classicSongId.collectAsState()
+    val teamStyleId by settingsViewModel.playerTeamStyleId.collectAsState()
+
+
     var gameState by remember { mutableStateOf(GameState(pieces = emptyList())) }
     var selectedPieceCoords by remember { mutableStateOf<Posizione?>(null) }
     var validMoveDestinations by remember { mutableStateOf<List<Posizione>>(emptyList()) }
@@ -180,7 +189,23 @@ fun GameScreen(
     }
 
     val coroutineScope = rememberCoroutineScope()
-    val context = LocalView.current.context
+
+    fun getTrackIdByName(name: String): Int? {
+        return when (name) {
+            "italy" -> R.raw.anthem_italy
+            "france" -> R.raw.anthem_france
+            "germany" -> R.raw.anthem_germany
+            "spain" -> R.raw.anthem_spain
+            "uk" -> R.raw.anthem_uk
+            "usa" -> R.raw.anthem_usa
+            "classic_1" -> R.raw.classic_1
+            "classic_2" -> R.raw.classic_2
+            "classic_3" -> R.raw.classic_3
+            "classic_4" -> R.raw.classic_4
+            "classic_5" -> R.raw.classic_5
+            else -> null
+        }
+    }
 
     fun generateComment(prompt: String, onResult: (String) -> Unit) {
         aiOpponent ?: return
@@ -240,6 +265,14 @@ fun GameScreen(
         gameState = gameState.copy(pieces = initialPieces, mandatoryCapturePieces = initialMandatory)
         turnoCorrente = damaEngine.getTurnoCorrente()
 
+        // --- Avvia la musica di gioco ---
+        MusicManager.setVolume(musicVolume)
+        val songToPlayId = if (teamStyleId == "default") classicSongId else teamStyleId
+        getTrackIdByName(songToPlayId)?.let { trackId ->
+            MusicManager.play(context, trackId)
+        }
+
+
         if (aiOpponent != null) {
             try {
                 val modelPath = ModelSettingsManager.getDmModelFilePath(context)
@@ -260,6 +293,8 @@ fun GameScreen(
     DisposableEffect(Unit) {
         onDispose {
             coroutineScope.launch { gemmaEngine.unload() }
+            // Stoppiamo la musica quando si esce dalla schermata di gioco
+            MusicManager.stop()
         }
     }
 
