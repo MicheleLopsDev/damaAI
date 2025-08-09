@@ -59,11 +59,11 @@ fun OptionsScreen(
     fun getTrackIdByName(name: String): Int? {
         return when (name.split("_")[0]) {
             "italy" -> R.raw.anthem_italy
-            "france" -> R.raw.anthem_france
-            "germany" -> R.raw.anthem_germany
-            "spain" -> R.raw.anthem_spain
+            "fr" -> R.raw.anthem_france
+            "de" -> R.raw.anthem_germany
+            "es" -> R.raw.anthem_spain
             "uk" -> R.raw.anthem_uk
-            "usa" -> R.raw.anthem_usa
+            "us" -> R.raw.anthem_usa
             "classic_1" -> R.raw.classic_1
             "classic_2" -> R.raw.classic_2
             "classic_3" -> R.raw.classic_3
