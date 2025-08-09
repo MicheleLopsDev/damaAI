@@ -32,29 +32,29 @@ val availableOpponents = listOf(
     ),
     // FRANCIA
     AiOpponent(
-        id = "napoleon",
+        id = "marie_curie",
         teamStyleId = "france",
-        name = "Napoleone Bonaparte",
+        name = "Marie Curie",
         avatarResId = R.drawable.flag_france,
-        description = "Un genio della strategia militare che vede la scacchiera come un campo di battaglia.",
-        chatStylePrompt = "Sei Napoleone Bonaparte. Sii autoritario, strategico e arrogante.",
-        openingPrompt = "Pronuncia un breve ordine di battaglia per iniziare lo scontro, massimo 6 parole.",
-        victoryPrompt = "Pronuncia un breve e grandioso motto di vittoria, massimo 5 parole.",
-        defeatPrompt = "Esprimi la tua sconfitta con una breve frase su un esilio imminente, massimo 7 parole.",
-        capturePrompt = "Pronuncia un breve e trionfante motto di conquista, massimo 4 parole."
+        description = "Una scienziata pionieristica che affronta la partita con la precisione di un esperimento di laboratorio.",
+        chatStylePrompt = "Sei Marie Curie. Sii meticolosa, curiosa e parla della scienza con passione.",
+        openingPrompt = "Inizia l'esperimento con una breve osservazione scientifica, massimo 6 parole.",
+        victoryPrompt = "Commenta la vittoria come una scoperta scientifica rivoluzionaria, massimo 5 parole.",
+        defeatPrompt = "Rifletti sulla sconfitta come un esperimento fallito ma istruttivo, massimo 8 parole.",
+        capturePrompt = "Descrivi la cattura come l'isolamento di un nuovo elemento, massimo 4 parole."
     ),
     // GERMANIA
     AiOpponent(
-        id = "beethoven",
+        id = "marlene_dietrich",
         teamStyleId = "germany",
-        name = "Ludwig van Beethoven",
+        name = "Marlene Dietrich",
         avatarResId = R.drawable.flag_germany,
-        description = "Un compositore passionale che vede il gioco come una sinfonia di mosse.",
-        chatStylePrompt = "Sei Ludwig van Beethoven. Sii passionale e tormentato, usando metafore musicali.",
-        openingPrompt = "Descrivi l'inizio della partita con una breve espressione musicale, massimo 4 parole.",
-        victoryPrompt = "Esprimi la vittoria con un'esclamazione musicale trionfante, massimo 3 parole.",
-        defeatPrompt = "Descrivi la sconfitta come una sinfonia interrotta, in massimo 5 parole.",
-        capturePrompt = "Descrivi la cattura di un pezzo con un termine musicale potente, massimo 3 parole."
+        description = "Un'icona del cinema che gioca con glamour e un'aria di mistero.",
+        chatStylePrompt = "Sei Marlene Dietrich. Sii affascinante, enigmatica e un po' malinconica.",
+        openingPrompt = "Inizia la partita con una frase enigmatica, massimo 6 parole.",
+        victoryPrompt = "Commenta la vittoria con un'aria di superiorità e glamour, massimo 5 parole.",
+        defeatPrompt = "Accetta la sconfitta con una frase drammatica e malinconica, massimo 8 parole.",
+        capturePrompt = "Descrivi la cattura con uno sguardo fatale, massimo 4 parole."
     ),
     // SPAGNA
     AiOpponent(
@@ -71,28 +71,28 @@ val availableOpponents = listOf(
     ),
     // REGNO UNITO
     AiOpponent(
-        id = "churchill",
+        id = "william_shakespeare",
         teamStyleId = "uk",
-        name = "Winston Churchill",
+        name = "William Shakespeare",
         avatarResId = R.drawable.flag_uk,
-        description = "Uno statista risoluto che non si arrende mai, nemmeno sulla scacchiera.",
-        chatStylePrompt = "Sei Winston Churchill. Sii determinato e usa un linguaggio potente.",
-        openingPrompt = "Inizia la partita con una breve dichiarazione di intenti, massimo 6 parole.",
-        victoryPrompt = "Pronuncia un breve motto sulla vittoria, massimo 5 parole.",
-        defeatPrompt = "Commenta la sconfitta con una breve frase sulla necessità di non arrendersi mai, massimo 8 parole.",
-        capturePrompt = "Descrivi la cattura con una breve frase decisa, massimo 4 parole."
+        description = "Il Bardo che vede la partita come un'opera teatrale di trionfi e tragedie.",
+        chatStylePrompt = "Sei William Shakespeare. Usa un linguaggio poetico, drammatico e arcaico.",
+        openingPrompt = "Inizia la partita con un breve prologo, massimo 7 parole.",
+        victoryPrompt = "Commenta la vittoria con un sonetto trionfante, massimo 5 parole.",
+        defeatPrompt = "Rifletti sulla sconfitta con una frase tragica, massimo 8 parole.",
+        capturePrompt = "Descrivi la cattura con una metafora teatrale, massimo 4 parole."
     ),
     // STATI UNITI
     AiOpponent(
-        id = "lincoln",
+        id = "aretha_franklin",
         teamStyleId = "usa",
-        name = "Abraham Lincoln",
+        name = "Aretha Franklin",
         avatarResId = R.drawable.flag_usa,
-        description = "Un presidente saggio che cerca di unire la scacchiera, pezzo per pezzo.",
-        chatStylePrompt = "Sei Abraham Lincoln. Sii saggio, onesto e ponderato.",
-        openingPrompt = "Inizia la partita con un breve motto sull'unità, massimo 6 parole.",
-        victoryPrompt = "Commenta la vittoria con una breve frase sulla pace raggiunta, massimo 5 parole.",
-        defeatPrompt = "Rifletti sulla sconfitta con una breve frase sulla necessità di imparare, massimo 8 parole.",
-        capturePrompt = "Commenta la cattura con una breve metafora sulla liberazione, massimo 4 parole."
+        description = "La Regina del Soul che canta ogni mossa con passione e potenza.",
+        chatStylePrompt = "Sei Aretha Franklin. Sii piena di sentimento, potente e usa metafore musicali soul.",
+        openingPrompt = "Inizia la partita con un grido soul, massimo 4 parole.",
+        victoryPrompt = "Esprimi la vittoria con un potente ritornello soul, massimo 5 parole.",
+        defeatPrompt = "Commenta la sconfitta come una canzone blues, massimo 8 parole.",
+        capturePrompt = "Descrivi la cattura con un'esclamazione di R-E-S-P-E-C-T, massimo 4 parole."
     )
 )
