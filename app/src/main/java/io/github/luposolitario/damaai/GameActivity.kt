@@ -77,7 +77,8 @@ fun AppNavigation(settingsViewModel: SettingsViewModel) {
             GameScreen(
                 navController = navController,
                 playerTeamStyle = playerTeamStyle,
-                boardStyle = boardStyle
+                boardStyle = boardStyle,
+                settingsViewModel = settingsViewModel
             )
         }
         composable(route = "settings_screen") {
@@ -148,7 +149,8 @@ fun fromNotazioneAlgebrica(notazione: String): Posizione? {
 fun GameScreen(
     navController: NavController,
     playerTeamStyle: TeamStyle,
-    boardStyle: BoardStyle
+    boardStyle: BoardStyle,
+    settingsViewModel: SettingsViewModel // <-- AGGIUNTO VIEWMODEL
 ) {
     var gameState by remember { mutableStateOf(GameState(pieces = emptyList())) }
     var selectedPieceCoords by remember { mutableStateOf<Posizione?>(null) }
@@ -161,6 +163,10 @@ fun GameScreen(
 
     val damaEngine: DamaEngine = remember { DamaEngineImpl() }
     val gemmaEngine = remember { GemmaEngine() }
+
+    // ---- LEGGIAMO LA DIFFICOLTÀ DAL VIEWMODEL ----
+    val selectedDifficulty by settingsViewModel.difficultyLevel.collectAsState()
+
 
     val aiOpponent: AiOpponent? = remember(playerTeamStyle.id) {
         availableOpponents.find { it.teamStyleId == playerTeamStyle.id }
@@ -214,7 +220,14 @@ fun GameScreen(
         chatMessages = emptyList()
         winner = null
         finalAiComment = null
-        damaEngine.nuovaPartita(Difficolta.FACILE)
+        // --- **FIX 1**: Utilizziamo la difficoltà dalle impostazioni ---
+        val difficoltaAttuale = try {
+            Difficolta.valueOf(selectedDifficulty)
+        } catch (e: IllegalArgumentException) {
+            Difficolta.FACILE // Valore di fallback
+        }
+        damaEngine.nuovaPartita(difficoltaAttuale)
+        // --- FINE FIX ---
         val initialPieces = parseBoardState(damaEngine.getStatoScacchiera())
         val initialMandatory = damaEngine.getPezziConCatturaObbligatoria()
         gameState = gameState.copy(pieces = initialPieces, mandatoryCapturePieces = initialMandatory)
