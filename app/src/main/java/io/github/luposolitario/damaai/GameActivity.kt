@@ -236,24 +236,34 @@ fun GameScreen(
         }
     }
 
-    fun generateComment(prompt: String, onResult: (String) -> Unit) {
+    fun generateComment(prompt: String) { // Rimosso il parametro onResult
         aiOpponent ?: return
         isAiThinking = true
+
+        // 1. Aggiungi subito un segnaposto vuoto per il messaggio dell'IA
+        val initialMessage = "${aiOpponent.name}: \"\""
+        chatMessages = chatMessages + initialMessage
+
         coroutineScope.launch {
             val fullPrompt = "${aiOpponent.chatStylePrompt}\n\n$prompt"
-            val responseBuilder = StringBuilder()
+
             try {
                 gemmaEngine.generateMove(fullPrompt, damaEngine.getStatoScacchiera())
                     .onCompletion {
                         isAiThinking = false
-                        if (responseBuilder.isNotEmpty()) {
-                            onResult(responseBuilder.toString())
-                        }
                     }
-                    .collect { partialResponse -> responseBuilder.append(partialResponse) }
+                    .collect { partialResponse ->
+                        // 2. Aggiorna l'ultimo messaggio della lista con ogni nuovo pezzo
+                        val lastMessageIndex = chatMessages.lastIndex
+                        val updatedMessage = chatMessages[lastMessageIndex] + partialResponse
+                        // Crea una nuova lista per notificare il cambiamento a Compose
+                        chatMessages = chatMessages.toMutableList().also { it[lastMessageIndex] = updatedMessage }
+                    }
             } catch (e: Exception) {
                 Log.e("GemmaIntegration", "Errore durante la generazione della risposta", e)
                 isAiThinking = false
+                // Opzionale: Rimuovi il segnaposto in caso di errore
+                chatMessages = chatMessages.dropLast(1)
             }
         }
     }
@@ -342,9 +352,7 @@ fun GameScreen(
                 val modelPath = ModelSettingsManager.getDmModelFilePath(context)
                 if (modelPath.isNotBlank()) {
                     gemmaEngine.load(context, modelPath)
-                    generateComment(aiOpponent.openingPrompt) { comment ->
-                        chatMessages = chatMessages + "${aiOpponent.name}: \"$comment\""
-                    }
+                    generateComment(aiOpponent.openingPrompt)
                 } else {
                     chatMessages = chatMessages + "ERRORE: Modello IA non trovato."
                 }
@@ -473,9 +481,7 @@ fun GameScreen(
                                                     chatMessages = chatMessages + "Mossa IA: ${mossaIA.toString()}"
                                                     val pedinaCatturataIA = damaEngine.trovaPedinaCatturata(mossaIA)
                                                     if (pedinaCatturataIA != null) {
-                                                        generateComment(aiOpponent.capturePrompt) { comment ->
-                                                            chatMessages = chatMessages + "${aiOpponent.name}: \"$comment\""
-                                                        }
+                                                        generateComment(aiOpponent.capturePrompt)
                                                     }
                                                     val finalPieces = parseBoardState(damaEngine.getStatoScacchiera())
                                                     gameState = gameState.copy(pieces = finalPieces)
@@ -504,7 +510,7 @@ fun GameScreen(
                                         winner = vincitore
                                         if (aiOpponent != null) {
                                             val finalPrompt = if (vincitore == Colore.NERO) aiOpponent.victoryPrompt else aiOpponent.defeatPrompt
-                                            generateComment(finalPrompt) { comment -> finalAiComment = comment }
+                                            generateComment(finalPrompt)
                                         }
                                     }
                                 }
