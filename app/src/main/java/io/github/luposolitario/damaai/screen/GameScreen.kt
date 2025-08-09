@@ -21,11 +21,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import io.github.luposolitario.damaai.DamaAIApplication
 import io.github.luposolitario.damaai.data.availableBoardStyles
+import io.github.luposolitario.damaai.data.availableOpponents
 import io.github.luposolitario.damaai.data.availableTeamStyles
 import io.github.luposolitario.damaai.viewmodels.SettingsViewModel
 import io.github.luposolitario.damaai.viewmodels.SettingsViewModelFactory
@@ -84,11 +86,11 @@ fun SettingsScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Palette,
-                        contentDescription = "Personalizza Aspetto",
+                        contentDescription = "Personalizza",
                         modifier = Modifier.size(24.dp)
                     )
                     Spacer(modifier = Modifier.width(16.dp))
-                    Text("Personalizza Aspetto", style = MaterialTheme.typography.bodyLarge)
+                    Text("Personalizza", style = MaterialTheme.typography.bodyLarge)
                 }
             }
 
@@ -291,7 +293,7 @@ fun CustomizationScreen(navController: NavController) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Personalizza Aspetto") },
+                title = { Text("Personalizza") }, // <-- **FIX 1: Titolo modificato**
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Indietro")
@@ -301,7 +303,7 @@ fun CustomizationScreen(navController: NavController) {
         }
     ) { paddingValues ->
         LazyColumn(
-            modifier = Modifier.Companion
+            modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
             contentPadding = PaddingValues(16.dp),
@@ -311,80 +313,99 @@ fun CustomizationScreen(navController: NavController) {
                 Text(
                     text = "Scegli lo stile per le tue pedine:",
                     style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.Companion.padding(bottom = 8.dp)
+                    modifier = Modifier.padding(bottom = 8.dp)
                 )
             }
             items(items = availableTeamStyles, key = { it.id }) { style ->
                 val isSelected = style.id == selectedTeamStyleId
                 Row(
-                    modifier = Modifier.Companion
+                    modifier = Modifier
                         .fillMaxWidth()
                         .border(
                             width = 3.dp,
-                            color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Companion.Transparent,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
                             shape = RoundedCornerShape(12.dp)
                         )
                         .background(
                             MaterialTheme.colorScheme.surfaceVariant,
-                            androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+                            RoundedCornerShape(12.dp)
                         )
-                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(12.dp))
                         .clickable { settingsViewModel.setPlayerTeamStyle(style.id) }
                         .padding(16.dp),
-                    verticalAlignment = Alignment.Companion.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Image(
                         painter = painterResource(id = style.flagResId),
                         contentDescription = "Bandiera ${style.nationName}",
-                        modifier = Modifier.Companion.size(40.dp).clip(CircleShape)
+                        modifier = Modifier.size(40.dp).clip(CircleShape)
                     )
-                    Spacer(modifier = Modifier.Companion.width(16.dp))
-                    Text(text = style.nationName, style = MaterialTheme.typography.bodyLarge)
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    // --- **FIX 2**: Aggiunto testo descrittivo per l'avversario ---
+                    Column {
+                        Text(text = style.nationName, style = MaterialTheme.typography.bodyLarge)
+
+                        // Trova l'avversario corrispondente allo stile
+                        val opponent = availableOpponents.find { it.teamStyleId == style.id }
+                        val opponentText = if (opponent != null) {
+                            "Avversario: ${opponent.name}"
+                        } else {
+                            "Modalità Classica (umano vs umano)"
+                        }
+
+                        Text(
+                            text = opponentText,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Light
+                        )
+                    }
+                    // --- Fine FIX 2 ---
                 }
             }
             item {
-                Divider(modifier = Modifier.Companion.padding(vertical = 16.dp))
+                Divider(modifier = Modifier.padding(vertical = 16.dp))
                 Text(
                     text = "Scegli lo stile della scacchiera:",
                     style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.Companion.padding(bottom = 8.dp)
+                    modifier = Modifier.padding(bottom = 8.dp)
                 )
             }
             items(items = availableBoardStyles, key = { it.id }) { style ->
                 val isSelected = style.id == selectedBoardStyleId
                 Row(
-                    modifier = Modifier.Companion
+                    modifier = Modifier
                         .fillMaxWidth()
                         .border(
                             width = 3.dp,
-                            color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Companion.Transparent,
-                            shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                            shape = RoundedCornerShape(12.dp)
                         )
                         .background(
                             MaterialTheme.colorScheme.surfaceVariant,
-                            androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+                            RoundedCornerShape(12.dp)
                         )
-                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(12.dp))
                         .clickable { settingsViewModel.setBoardStyle(style.id) }
                         .padding(16.dp),
-                    verticalAlignment = Alignment.Companion.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(
-                        modifier = Modifier.Companion
+                        modifier = Modifier
                             .size(40.dp)
                             .clip(CircleShape)
                             .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
                     ) {
                         Box(
-                            modifier = Modifier.Companion.weight(1f).fillMaxHeight()
+                            modifier = Modifier.weight(1f).fillMaxHeight()
                                 .background(style.lightSquareColor)
                         )
                         Box(
-                            modifier = Modifier.Companion.weight(1f).fillMaxHeight()
+                            modifier = Modifier.weight(1f).fillMaxHeight()
                                 .background(style.darkSquareColor)
                         )
                     }
-                    Spacer(modifier = Modifier.Companion.width(16.dp))
+                    Spacer(modifier = Modifier.width(16.dp))
                     Text(text = style.name, style = MaterialTheme.typography.bodyLarge)
                 }
             }
