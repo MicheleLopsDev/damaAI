@@ -197,6 +197,7 @@ fun GameScreen(
     var isAiThinking by remember { mutableStateOf(false) }
     var turnoCorrente by remember { mutableStateOf(Colore.BIANCO) }
     var boardCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    var mossaTestuale by remember { mutableStateOf("") }
 
     val damaEngine: DamaEngine = remember { DamaEngineImpl() }
     val gemmaEngine = remember { GemmaEngine() }
@@ -262,6 +263,34 @@ fun GameScreen(
         gameState = gameState.copy(capturedPiece = capturedPieceToAnimate)
         delay(800)
         gameState = gameState.copy(capturedPiece = null)
+    }
+
+    fun eseguiMossaTestuale() {
+        if (mossaTestuale.isNotBlank()) {
+            coroutineScope.launch {
+                val mossaEseguita = damaEngine.muoviPezzoUmano(mossaTestuale)
+                if (mossaEseguita != null) {
+                    val playerColorText = if (turnoCorrente == Colore.BIANCO) "Bianco" else "Nero"
+                    chatMessages = chatMessages + "Mossa $playerColorText: $mossaTestuale"
+
+                    val pedinaCatturata = damaEngine.trovaPedinaCatturata(mossaEseguita)
+                    val piecesAfterMove = parseBoardState(damaEngine.getStatoScacchiera())
+                    gameState = gameState.copy(pieces = piecesAfterMove)
+                    handleCaptureAnimation(pedinaCatturata)
+
+                    turnoCorrente = damaEngine.getTurnoCorrente()
+                    gameState = gameState.copy(mandatoryCapturePieces = damaEngine.getPezziConCatturaObbligatoria())
+
+                    mossaTestuale = ""
+
+                    damaEngine.getVincitore()?.let { vincitore ->
+                        winner = vincitore
+                    }
+                } else {
+                    chatMessages = chatMessages + "Mossa non valida: $mossaTestuale"
+                }
+            }
+        }
     }
 
     fun getValidMovesForSelectedPiece() {
@@ -509,8 +538,13 @@ fun GameScreen(
 
                 ChatDisplayArea(messages = chatMessages, modifier = Modifier.fillMaxWidth().weight(1f))
 
-                if (aiOpponent != null) {
-                    ChatInputArea(modifier = Modifier.fillMaxWidth())
+                if (aiOpponent == null) {
+                    ChatInputArea(
+                        testoMossa = mossaTestuale,
+                        onTestoMossaChange = { mossaTestuale = it },
+                        onInviaClick = { eseguiMossaTestuale() },
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
             }
         }
@@ -591,20 +625,24 @@ fun ChatDisplayArea(messages: List<String>, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun ChatInputArea(modifier: Modifier = Modifier) {
+fun ChatInputArea(
+    testoMossa: String,
+    onTestoMossaChange: (String) -> Unit,
+    onInviaClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically
     ) {
         OutlinedTextField(
-            value = "",
-            onValueChange = { },
-            label = { Text("Chat disabilitata") },
+            value = testoMossa,
+            onValueChange = onTestoMossaChange,
+            label = { Text("Inserisci mossa (es. A3 B4)") },
             modifier = Modifier.weight(1f),
-            enabled = false
         )
         Spacer(modifier = Modifier.width(8.dp))
-        Button(onClick = { }, enabled = false) {
+        Button(onClick = onInviaClick) {
             Text("Invia")
         }
     }
