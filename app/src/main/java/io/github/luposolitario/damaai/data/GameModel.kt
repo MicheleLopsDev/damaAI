@@ -32,20 +32,38 @@ data class GameState(
 data class TeamStyle(
     val id: String, // Un ID univoco, es. "italy"
     val nationName: String, // Il nome da mostrare, es. "Italia"
-    @DrawableRes val flagResId: Int // L'ID della risorsa immagine in drawable
+    @DrawableRes val flagResId: Int, // L'ID della risorsa immagine in drawable
+    val opponentName: String // Il nome da mostrare, es. "it_leonardo"
 )
 
 // Creiamo una lista degli stili che la nostra app supporterà
 val availableTeamStyles = listOf(
     // Usiamo il tuo dama_icon.png come opzione di default
-    TeamStyle(id = "default", nationName = "Classico", flagResId = R.drawable.dama_icon),
-    // Nazioni
-    TeamStyle(id = "italy", nationName = "Italia", flagResId = R.drawable.flag_italy),
-    TeamStyle(id = "france", nationName = "Francia", flagResId = R.drawable.flag_france),
-    TeamStyle(id = "germany", nationName = "Germania", flagResId = R.drawable.flag_germany),
-    TeamStyle(id = "spain", nationName = "Spagna", flagResId = R.drawable.flag_spain),
-    TeamStyle(id = "uk", nationName = "Regno Unito", flagResId = R.drawable.flag_uk),
-    TeamStyle(id = "usa", nationName = "Stati Uniti", flagResId = R.drawable.flag_usa)
+    TeamStyle("default", "Modalità Classica", R.drawable.dama_icon, "Classico"),
+
+    // Italia
+    TeamStyle(id = "italy_leonardo", nationName = "Italia", flagResId = R.drawable.flag_italy, "Leonardo da Vinci"),
+    TeamStyle(id = "italy_artemisia", nationName = "Italia", flagResId = R.drawable.flag_italy, "Artemisia Gentileschi"),
+
+    // Regno Unito
+    TeamStyle(id = "uk_shakespeare", nationName = "Regno Unito", flagResId = R.drawable.flag_uk, "William Shakespeare"),
+    TeamStyle(id = "uk_elisabetta_i", nationName = "Regno Unito", flagResId = R.drawable.flag_uk, "Regina Elisabetta I"),
+
+    // Germania
+    TeamStyle(id = "de_goethe", nationName = "Germania", flagResId = R.drawable.flag_germany, "Johann W. von Goethe"),
+    TeamStyle(id = "de_dietrich", nationName = "Germania", flagResId = R.drawable.flag_germany, "Marlene Dietrich"),
+
+    // Stati Uniti
+    TeamStyle(id = "us_twain", nationName = "Stati Uniti", flagResId = R.drawable.flag_usa, "Mark Twain"),
+    TeamStyle(id = "us_franklin", nationName = "Stati Uniti", flagResId = R.drawable.flag_usa, "Aretha Franklin"),
+
+    // Francia
+    TeamStyle(id = "fr_napoleon", nationName = "Francia", flagResId = R.drawable.flag_france, "Napoleone Bonaparte"),
+    TeamStyle(id = "fr_curie", nationName = "Francia", flagResId = R.drawable.flag_france, "Marie Curie"),
+
+    // Spagna
+    TeamStyle(id = "es_cervantes", nationName = "Spagna", flagResId = R.drawable.flag_spain, "Miguel de Cervantes"),
+    TeamStyle(id = "es_isabella_i", nationName = "Spagna", flagResId = R.drawable.flag_spain, "Isabella I di Castiglia")
 )
 
 // Aggiungi questo codice in fondo al file GameModel.kt

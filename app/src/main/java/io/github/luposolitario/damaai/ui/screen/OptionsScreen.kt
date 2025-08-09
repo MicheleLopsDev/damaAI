@@ -57,7 +57,7 @@ fun OptionsScreen(
     }
 
     fun getTrackIdByName(name: String): Int? {
-        return when (name) {
+        return when (name.split("_")[0]) {
             "italy" -> R.raw.anthem_italy
             "france" -> R.raw.anthem_france
             "germany" -> R.raw.anthem_germany
@@ -148,7 +148,7 @@ fun OptionsScreen(
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
                         Text(text = style.nationName, style = MaterialTheme.typography.bodyLarge)
-                        val opponent = availableOpponents.find { it.teamStyleId == style.id }
+                        val opponent = availableOpponents.find { it.name == style.opponentName }
                         val opponentText = if (opponent != null) {
                             "Avversario: ${opponent.name}"
                         } else {
