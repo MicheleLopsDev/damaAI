@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -22,6 +23,10 @@ class SettingsManager(private val context: Context) {
         val BOARD_STYLE_ID = stringPreferencesKey("board_style_id")
         // --- NUOVA CHIAVE PER LA DIFFICOLTÀ ---
         val DIFFICULTY_LEVEL = stringPreferencesKey("difficulty_level")
+
+        // --- NUOVE CHIAVI PER LA MUSICA ---
+        val MUSIC_VOLUME = floatPreferencesKey("music_volume")
+        val CLASSIC_SONG_ID = stringPreferencesKey("classic_song_id")
     }
 
     // --- Gestione Tema Scuro (invariata) ---
@@ -61,6 +66,34 @@ class SettingsManager(private val context: Context) {
     suspend fun setDifficultyLevel(level: String) {
         context.dataStore.edit { preferences ->
             preferences[DIFFICULTY_LEVEL] = level
+        }
+    }
+
+    // --- NUOVO: Flow per leggere il volume della musica ---
+    val musicVolumeFlow: Flow<Float> = context.dataStore.data
+        .map { preferences ->
+            // Se non c'è un valore salvato, usiamo 0.5f come default.
+            preferences[MUSIC_VOLUME] ?: 0.5f
+        }
+
+    // --- NUOVO: Funzione per salvare il volume della musica ---
+    suspend fun setMusicVolume(volume: Float) {
+        context.dataStore.edit { preferences ->
+            preferences[MUSIC_VOLUME] = volume
+        }
+    }
+
+    // --- NUOVO: Flow per leggere la canzone classica selezionata ---
+    val classicSongIdFlow: Flow<String> = context.dataStore.data
+        .map { preferences ->
+            // Se non c'è un valore salvato, usiamo "classic_1" come default.
+            preferences[CLASSIC_SONG_ID] ?: "classic_1"
+        }
+
+    // --- NUOVO: Funzione per salvare la canzone classica selezionata ---
+    suspend fun setClassicSongId(songId: String) {
+        context.dataStore.edit { preferences ->
+            preferences[CLASSIC_SONG_ID] = songId
         }
     }
 }

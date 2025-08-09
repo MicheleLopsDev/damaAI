@@ -57,6 +57,36 @@ class SettingsViewModel(
         }
     }
 
+
+    // --- NUOVO: StateFlow per il volume della musica ---
+    val musicVolume: StateFlow<Float> = settingsManager.musicVolumeFlow
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = 0.5f
+        )
+
+    // --- NUOVO: Funzione per salvare il volume della musica ---
+    fun setMusicVolume(volume: Float) {
+        viewModelScope.launch {
+            settingsManager.setMusicVolume(volume)
+        }
+    }
+
+    // --- NUOVO: StateFlow per la canzone classica selezionata ---
+    val classicSongId: StateFlow<String> = settingsManager.classicSongIdFlow
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = "classic_1"
+        )
+
+    // --- NUOVO: Funzione per salvare la canzone classica selezionata ---
+    fun setClassicSongId(songId: String) {
+        viewModelScope.launch {
+            settingsManager.setClassicSongId(songId)
+        }
+    }
 }
 
 
