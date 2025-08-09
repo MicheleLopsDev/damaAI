@@ -5,6 +5,8 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -23,6 +25,7 @@ class SettingsManager(private val context: Context) {
         // --- NUOVA CHIAVE PER LA DIFFICOLTÀ ---
         val DIFFICULTY_LEVEL = stringPreferencesKey("difficulty_level")
         val CLASSIC_MUSIC_ID = stringPreferencesKey("classic_music_id")
+        val MUSIC_VOLUME = floatPreferencesKey("music_volume")
     }
 
     // --- Gestione Tema Scuro (invariata) ---
@@ -73,6 +76,17 @@ class SettingsManager(private val context: Context) {
     suspend fun setClassicMusicId(musicId: String) {
         context.dataStore.edit { preferences ->
             preferences[CLASSIC_MUSIC_ID] = musicId
+        }
+    }
+
+    // Music Volume
+    val musicVolumeFlow: Flow<Float> = context.dataStore.data.map { preferences ->
+        // Default to 25% if not set
+        preferences[MUSIC_VOLUME] ?: 0.25f
+    }
+    suspend fun setMusicVolume(volume: Float) {
+        context.dataStore.edit { preferences ->
+            preferences[MUSIC_VOLUME] = volume
         }
     }
 }

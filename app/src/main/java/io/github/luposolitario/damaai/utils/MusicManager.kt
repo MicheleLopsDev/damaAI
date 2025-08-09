@@ -7,23 +7,39 @@ import androidx.annotation.RawRes
 class MusicManager(private val context: Context) {
 
     private var mediaPlayer: MediaPlayer? = null
+    private var currentVolume: Float = 0.25f // Default volume as per user request
 
-    fun start(@RawRes musicResId: Int) {
-        // Se c'è già una musica in riproduzione, fermala prima di avviarne una nuova.
+    fun playTrack(@RawRes musicResId: Int) {
+        // If music is already playing, stop and release it before starting a new track.
         if (mediaPlayer?.isPlaying == true) {
             mediaPlayer?.stop()
-            mediaPlayer?.release()
         }
-        mediaPlayer = MediaPlayer.create(context, musicResId)
+        // Release the previous instance regardless of its state
+        mediaPlayer?.release()
 
-        // Imposta il volume al 25%
-        mediaPlayer?.setVolume(0.25f, 0.25f)
+        mediaPlayer = MediaPlayer.create(context, musicResId).apply {
+            // Set the volume to the current stored level
+            setVolume(currentVolume, currentVolume)
 
-        // Imposta il loop
-        mediaPlayer?.isLooping = true
+            // The preview should not loop, as requested
+            isLooping = false
 
-        // Avvia la riproduzione
-        mediaPlayer?.start()
+            // Start playback
+            start()
+
+            // Set a completion listener to release the player when the track finishes
+            setOnCompletionListener {
+                it.release()
+                mediaPlayer = null
+            }
+        }
+    }
+
+    fun setVolume(volume: Float) {
+        // Clamp the volume between 0.0 and 1.0
+        currentVolume = volume.coerceIn(0.0f, 1.0f)
+        // Apply the volume to the currently playing media player, if it exists
+        mediaPlayer?.setVolume(currentVolume, currentVolume)
     }
 
     fun stop() {

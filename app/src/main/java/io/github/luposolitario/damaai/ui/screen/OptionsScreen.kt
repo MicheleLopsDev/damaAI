@@ -12,9 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -27,6 +25,7 @@ import io.github.luposolitario.damaai.data.availableClassicMusic
 import io.github.luposolitario.damaai.data.availableOpponents
 import io.github.luposolitario.damaai.data.availableTeamStyles
 import io.github.luposolitario.damaai.viewmodels.SettingsViewModel
+import io.github.luposolitario.damaai.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,6 +36,7 @@ fun OptionsScreen(
     val selectedDifficulty by settingsViewModel.difficultyLevel.collectAsState()
     val selectedTeamStyleId by settingsViewModel.playerTeamStyleId.collectAsState()
     val selectedClassicMusicId by settingsViewModel.classicMusicId.collectAsState()
+    val musicVolume by settingsViewModel.musicVolume.collectAsState()
 
     Scaffold(
         topBar = {
@@ -57,116 +57,103 @@ fun OptionsScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Difficulty Section
             item {
-                Text(
-                    "Livello Difficoltà IA",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
+                Text("Livello Difficoltà IA", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 8.dp))
                 Column {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth().clickable { settingsViewModel.setDifficultyLevel("FACILE") }
-                    ) {
-                        RadioButton(selected = selectedDifficulty == "FACILE", onClick = { settingsViewModel.setDifficultyLevel("FACILE") })
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Facile")
-                    }
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth().clickable { settingsViewModel.setDifficultyLevel("MEDIO") }
-                    ) {
-                        RadioButton(selected = selectedDifficulty == "MEDIO", onClick = { settingsViewModel.setDifficultyLevel("MEDIO") })
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Medio")
-                    }
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth().clickable { settingsViewModel.setDifficultyLevel("DIFFICILE") }
-                    ) {
-                        RadioButton(selected = selectedDifficulty == "DIFFICILE", onClick = { settingsViewModel.setDifficultyLevel("DIFFICILE") })
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Difficile")
+                    listOf("FACILE", "MEDIO", "DIFFICILE").forEach { level ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth().clickable { settingsViewModel.setDifficultyLevel(level) }
+                        ) {
+                            RadioButton(selected = selectedDifficulty == level, onClick = { settingsViewModel.setDifficultyLevel(level) })
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(level.lowercase().replaceFirstChar { it.uppercase() })
+                        }
                     }
                 }
             }
 
             item { Divider(modifier = Modifier.padding(vertical = 16.dp)) }
 
+            // Volume Slider Section
             item {
-                Text(
-                    text = "Scegli lo stile per le tue pedine:",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                Text("Volume Musica", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 8.dp))
+                Slider(
+                    value = musicVolume,
+                    onValueChange = { newVolume -> settingsViewModel.setMusicVolume(newVolume) },
+                    valueRange = 0f..1f,
+                    steps = 100
                 )
+            }
+
+            item { Divider(modifier = Modifier.padding(vertical = 16.dp)) }
+
+            // Team/Anthem Selection
+            item {
+                Text("Scegli Inno Nazionale o Musica Classica", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 8.dp))
             }
             items(items = availableTeamStyles, key = { it.id }) { style ->
                 val isSelected = style.id == selectedTeamStyleId
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(
-                            width = 3.dp,
-                            color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                        .background(
-                            MaterialTheme.colorScheme.surfaceVariant,
-                            RoundedCornerShape(12.dp)
-                        )
+                        .border(width = 3.dp, color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent, shape = RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(12.dp))
                         .clip(RoundedCornerShape(12.dp))
-                        .clickable { settingsViewModel.setPlayerTeamStyle(style.id) }
+                        .clickable {
+                            settingsViewModel.setPlayerTeamStyle(style.id)
+                            style.anthemResId?.let { anthem ->
+                                settingsViewModel.onMusicSelected(anthem)
+                            }
+                        }
                         .padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Image(
-                        painter = painterResource(id = style.flagResId),
-                        contentDescription = "Bandiera ${style.nationName}",
-                        modifier = Modifier.size(40.dp).clip(CircleShape)
-                    )
+                    Image(painter = painterResource(id = style.flagResId), contentDescription = "Bandiera ${style.nationName}", modifier = Modifier.size(40.dp).clip(CircleShape))
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
                         Text(text = style.nationName, style = MaterialTheme.typography.bodyLarge)
-                        val opponent = availableOpponents.find { it.teamStyleId == style.id }
-                        val opponentText = if (opponent != null) {
-                            "Avversario: ${opponent.name}"
-                        } else {
-                            "Modalità Classica (umano vs umano)"
-                        }
-                        Text(
-                            text = opponentText,
-                            style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.Light
-                        )
+                        val opponentText = if (style.id != "default") "Avversario: ${availableOpponents.find { it.teamStyleId == style.id }?.name ?: ""}" else "Modalità Classica (umano vs umano)"
+                        Text(text = opponentText, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Light)
                     }
                 }
             }
 
+            // Classic Music Dropdown Section
             if (selectedTeamStyleId == "default") {
                 item {
-                    Divider(modifier = Modifier.padding(vertical = 16.dp))
-                }
-                item {
-                    Text(
-                        text = "Scegli la musica per la modalità Classica:",
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                }
-                items(availableClassicMusic) { music ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { settingsViewModel.setClassicMusicId(music.id) }
-                            .padding(vertical = 4.dp)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("Scegli la musica per la modalità Classica:", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 8.dp))
+
+                    var expanded by remember { mutableStateOf(false) }
+                    val selectedMusic = availableClassicMusic.find { it.id == selectedClassicMusicId } ?: availableClassicMusic.first()
+
+                    ExposedDropdownMenuBox(
+                        expanded = expanded,
+                        onExpandedChange = { expanded = !expanded }
                     ) {
-                        RadioButton(
-                            selected = selectedClassicMusicId == music.id,
-                            onClick = { settingsViewModel.setClassicMusicId(music.id) }
+                        TextField(
+                            value = selectedMusic.name,
+                            onValueChange = {},
+                            readOnly = true,
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                            modifier = Modifier.menuAnchor().fillMaxWidth()
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(music.name)
+                        ExposedDropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
+                            availableClassicMusic.forEach { music ->
+                                DropdownMenuItem(
+                                    text = { Text(music.name) },
+                                    onClick = {
+                                        settingsViewModel.onMusicSelected(music.musicResId, music.id)
+                                        expanded = false
+                                    }
+                                )
+                            }
+                        }
                     }
                 }
             }

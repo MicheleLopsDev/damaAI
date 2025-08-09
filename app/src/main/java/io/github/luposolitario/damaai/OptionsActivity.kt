@@ -16,7 +16,7 @@ class OptionsActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val application = application as DamaAIApplication
         val settingsViewModel: SettingsViewModel = viewModels<SettingsViewModel> {
-            SettingsViewModelFactory(application.settingsManager)
+            SettingsViewModelFactory(application.settingsManager, application.musicManager)
         }.value
 
         setContent {
