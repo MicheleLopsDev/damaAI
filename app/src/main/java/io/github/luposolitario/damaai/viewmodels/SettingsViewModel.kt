@@ -69,7 +69,7 @@ class SettingsViewModel(
 
     // --- Board Style ---
     val boardStyleId: StateFlow<String> = settingsManager.boardStyleIdFlow
-        .stateIn(scope = viewModelScope, started = SharingStarted.WhileSubscribed(5000), initialValue = "wood")
+        .stateIn(scope = viewModelScope, started = SharingStarted.WhileSubsubscribed(5000), initialValue = "wood")
     fun setBoardStyle(styleId: String) {
         viewModelScope.launch { settingsManager.setBoardStyle(styleId) }
     }

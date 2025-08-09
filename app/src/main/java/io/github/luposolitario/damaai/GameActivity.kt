@@ -55,19 +55,20 @@ class GameActivity : ComponentActivity() {
         setContent {
             val application = application as DamaAIApplication
             val settingsViewModel: SettingsViewModel = viewModel(
-                factory = SettingsViewModelFactory(application.settingsManager)
+                factory = SettingsViewModelFactory(application.settingsManager, application.musicManager)
             )
             val useDarkTheme by settingsViewModel.isDarkModeEnabled.collectAsState(initial = isSystemInDarkTheme())
 
+            val musicManager = application.musicManager
             DamaAITheme(darkTheme = useDarkTheme) {
-                AppNavigation(settingsViewModel = settingsViewModel)
+                AppNavigation(settingsViewModel = settingsViewModel, musicManager = musicManager)
             }
         }
     }
 }
 
 @Composable
-fun AppNavigation(settingsViewModel: SettingsViewModel) {
+fun AppNavigation(settingsViewModel: SettingsViewModel, musicManager: MusicManager) {
     val navController = rememberNavController()
     val playerStyleId by settingsViewModel.playerTeamStyleId.collectAsState()
     val playerTeamStyle = availableTeamStyles.find { it.id == playerStyleId } ?: availableTeamStyles.first()
@@ -80,7 +81,8 @@ fun AppNavigation(settingsViewModel: SettingsViewModel) {
                 navController = navController,
                 playerTeamStyle = playerTeamStyle,
                 boardStyle = boardStyle,
-                settingsViewModel = settingsViewModel
+                settingsViewModel = settingsViewModel,
+                musicManager = musicManager
             )
         }
         composable(route = "settings_screen") {
@@ -152,7 +154,8 @@ fun GameScreen(
     navController: NavController,
     playerTeamStyle: TeamStyle,
     boardStyle: BoardStyle,
-    settingsViewModel: SettingsViewModel // <-- AGGIUNTO VIEWMODEL
+    settingsViewModel: SettingsViewModel,
+    musicManager: MusicManager // Pass the shared MusicManager
 ) {
     var gameState by remember { mutableStateOf(GameState(pieces = emptyList())) }
     var selectedPieceCoords by remember { mutableStateOf<Posizione?>(null) }
@@ -166,7 +169,6 @@ fun GameScreen(
     val damaEngine: DamaEngine = remember { DamaEngineImpl() }
     val gemmaEngine = remember { GemmaEngine() }
     val context = LocalView.current.context
-    val musicManager = remember { MusicManager(context) }
 
     // ---- LEGGIAMO LA DIFFICOLTÀ DAL VIEWMODEL ----
     val selectedDifficulty by settingsViewModel.difficultyLevel.collectAsState()
@@ -261,7 +263,7 @@ fun GameScreen(
         } else {
             playerTeamStyle.anthemResId
         }
-        musicToPlay?.let { musicManager.start(it) }
+        musicToPlay?.let { musicManager.playTrack(it) }
 
         if (aiOpponent != null) {
             try {
