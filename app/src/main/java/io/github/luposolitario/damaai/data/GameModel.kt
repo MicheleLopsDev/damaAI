@@ -42,37 +42,29 @@ val availableTeamStyles = listOf(
     TeamStyle("default", "Modalità Classica", R.drawable.dama_icon, "Classico"),
 
     // Italia
-    TeamStyle(id = "italy_leonardo", nationName = "Italia", flagResId = R.drawable.flag_italy, "Leonardo da Vinci"),
-    TeamStyle(id = "italy_artemisia", nationName = "Italia", flagResId = R.drawable.flag_italy, "Artemisia Gentileschi"),
+    TeamStyle(id = "it_leonardo", nationName = "it", flagResId = R.drawable.flag_italy, "Leonardo da Vinci"),
+    TeamStyle(id = "it_artemisia", nationName = "it", flagResId = R.drawable.flag_italy, "Artemisia Gentileschi"),
 
     // Regno Unito
-    TeamStyle(id = "uk_shakespeare", nationName = "Regno Unito", flagResId = R.drawable.flag_uk, "William Shakespeare"),
-    TeamStyle(id = "uk_elisabetta_i", nationName = "Regno Unito", flagResId = R.drawable.flag_uk, "Regina Elisabetta I"),
+    TeamStyle(id = "uk_shakespeare", nationName = "uk", flagResId = R.drawable.flag_uk, "William Shakespeare"),
+    TeamStyle(id = "uk_elisabetta_i", nationName = "uk", flagResId = R.drawable.flag_uk, "Regina Elisabetta I"),
 
     // Germania
-    TeamStyle(id = "de_goethe", nationName = "Germania", flagResId = R.drawable.flag_germany, "Johann W. von Goethe"),
-    TeamStyle(id = "de_dietrich", nationName = "Germania", flagResId = R.drawable.flag_germany, "Marlene Dietrich"),
+    TeamStyle(id = "de_goethe", nationName = "de", flagResId = R.drawable.flag_germany, "Johann W. von Goethe"),
+    TeamStyle(id = "de_dietrich", nationName = "de", flagResId = R.drawable.flag_germany, "Marlene Dietrich"),
 
     // Stati Uniti
-    TeamStyle(id = "us_twain", nationName = "Stati Uniti", flagResId = R.drawable.flag_usa, "Mark Twain"),
-    TeamStyle(id = "us_franklin", nationName = "Stati Uniti", flagResId = R.drawable.flag_usa, "Aretha Franklin"),
+    TeamStyle(id = "us_twain", nationName = "us", flagResId = R.drawable.flag_usa, "Mark Twain"),
+    TeamStyle(id = "us_franklin", nationName = "us", flagResId = R.drawable.flag_usa, "Aretha Franklin"),
 
     // Francia
-    TeamStyle(id = "fr_napoleon", nationName = "Francia", flagResId = R.drawable.flag_france, "Napoleone Bonaparte"),
-    TeamStyle(id = "fr_curie", nationName = "Francia", flagResId = R.drawable.flag_france, "Marie Curie"),
+    TeamStyle(id = "fr_napoleon", nationName = "fr", flagResId = R.drawable.flag_france, "Napoleone Bonaparte"),
+    TeamStyle(id = "fr_curie", nationName = "fr", flagResId = R.drawable.flag_france, "Marie Curie"),
 
     // Spagna
-    TeamStyle(id = "es_cervantes", nationName = "Spagna", flagResId = R.drawable.flag_spain, "Miguel de Cervantes"),
-    TeamStyle(id = "es_isabella_i", nationName = "Spagna", flagResId = R.drawable.flag_spain, "Isabella I di Castiglia")
+    TeamStyle(id = "es_cervantes", nationName = "es", flagResId = R.drawable.flag_spain, "Miguel de Cervantes"),
+    TeamStyle(id = "es_isabella_i", nationName = "es", flagResId = R.drawable.flag_spain, "Isabella I di Castiglia")
 )
-
-// Aggiungi questo codice in fondo al file GameModel.kt
-
-
-
-// ... (il codice esistente rimane invariato)
-
-// --- NUOVO: Definiamo gli stili per la scacchiera ---
 
 data class BoardStyle(
     val id: String,

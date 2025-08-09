@@ -22,8 +22,8 @@ class SettingsViewModel(
     }
 
     // --- Gestione Stile Pedine (invariata) ---
-    val playerTeamStyleId: StateFlow<String> = settingsManager.playerTeamStyleIdFlow
-        .stateIn(scope = viewModelScope, started = SharingStarted.WhileSubscribed(5000), initialValue = "default")
+    val playerTeamStyleId: StateFlow<String?> = settingsManager.playerTeamStyleIdFlow
+        .stateIn(scope = viewModelScope, started = SharingStarted.WhileSubscribed(5000), initialValue = null)
     fun setPlayerTeamStyle(styleId: String) {
         viewModelScope.launch { settingsManager.setPlayerTeamStyle(styleId) }
     }

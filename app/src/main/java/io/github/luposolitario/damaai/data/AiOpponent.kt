@@ -20,7 +20,7 @@ val availableOpponents = listOf(
     // === ITALIA ===
     AiOpponent(
         id = "it_leonardo",
-        teamStyleId = "italy",
+        teamStyleId = "it",
         name = "Leonardo da Vinci",
         avatarResId = R.drawable.flag_italy,
         description = "Un genio poliedrico che vede il gioco come un'opera d'arte e un meccanismo da studiare.",
@@ -32,7 +32,7 @@ val availableOpponents = listOf(
     ),
     AiOpponent(
         id = "it_artemisia",
-        teamStyleId = "italy",
+        teamStyleId = "it",
         name = "Artemisia Gentileschi",
         avatarResId = R.drawable.flag_italy,
         description = "Pittrice passionale e determinata, gioca con la stessa intensità drammatica dei suoi capolavori barocchi.",
@@ -70,7 +70,7 @@ val availableOpponents = listOf(
     // === GERMANIA ===
     AiOpponent(
         id = "de_goethe",
-        teamStyleId = "germany",
+        teamStyleId = "de",
         name = "Johann W. von Goethe",
         avatarResId = R.drawable.flag_germany,
         description = "Poeta e scienziato, vive la partita come un'espressione dello Sturm und Drang: passione e intelletto in conflitto.",
@@ -82,7 +82,7 @@ val availableOpponents = listOf(
     ),
     AiOpponent(
         id = "de_dietrich",
-        teamStyleId = "germany",
+        teamStyleId = "de",
         name = "Marlene Dietrich",
         avatarResId = R.drawable.flag_germany,
         description = "Attrice iconica, affascinante e disincantata, che gioca con stile e una punta di drammatico cinismo.",
@@ -95,7 +95,7 @@ val availableOpponents = listOf(
     // === STATI UNITI ===
     AiOpponent(
         id = "us_twain",
-        teamStyleId = "usa",
+        teamStyleId = "us",
         name = "Mark Twain",
         avatarResId = R.drawable.flag_usa,
         description = "Scrittore e umorista, affronta la partita con sarcasmo, arguzia e un'osservazione critica della natura umana.",
@@ -107,7 +107,7 @@ val availableOpponents = listOf(
     ),
     AiOpponent(
         id = "us_franklin",
-        teamStyleId = "usa",
+        teamStyleId = "us",
         name = "Aretha Franklin",
         avatarResId = R.drawable.flag_usa,
         description = "La Regina del Soul, gioca con potenza, sentimento e un'incrollabile fiducia in sé stessa.",
@@ -120,7 +120,7 @@ val availableOpponents = listOf(
     // === FRANCIA ===
     AiOpponent(
         id = "fr_napoleon",
-        teamStyleId = "france",
+        teamStyleId = "fr",
         name = "Napoleone Bonaparte",
         avatarResId = R.drawable.flag_france,
         description = "Imperatore e stratega militare, tratta la scacchiera come un campo di battaglia da conquistare a ogni costo.",
@@ -132,7 +132,7 @@ val availableOpponents = listOf(
     ),
     AiOpponent(
         id = "fr_curie",
-        teamStyleId = "france",
+        teamStyleId = "fr",
         name = "Marie Curie",
         avatarResId = R.drawable.flag_france,
         description = "Scienziata pioniera, affronta il gioco con logica rigorosa e un'instancabile ricerca della verità strategica.",
@@ -145,7 +145,7 @@ val availableOpponents = listOf(
     // === SPAGNA ===
     AiOpponent(
         id = "es_cervantes",
-        teamStyleId = "spain",
+        teamStyleId = "es",
         name = "Miguel de Cervantes",
         avatarResId = R.drawable.flag_spain,
         description = "Il padre del Don Chisciotte, vede la partita come un'avventura cavalleresca, piena di giganti (errori) e mulini a vento (strategie inutili).",
@@ -157,7 +157,7 @@ val availableOpponents = listOf(
     ),
     AiOpponent(
         id = "es_isabella_i",
-        teamStyleId = "spain",
+        teamStyleId = "es",
         name = "Isabella I di Castiglia",
         avatarResId = R.drawable.flag_spain,
         description = "Regina cattolica, determinata e devota, gioca per unificare il suo regno sulla scacchiera e non tollera eresie strategiche.",

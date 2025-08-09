@@ -98,15 +98,26 @@ fun AppNavigation(settingsViewModel: SettingsViewModel) {
     val playerTeamStyle = availableTeamStyles.find { it.id == playerStyleId } ?: availableTeamStyles.first()
     val boardStyleId by settingsViewModel.boardStyleId.collectAsState()
     val boardStyle = availableBoardStyles.find { it.id == boardStyleId } ?: availableBoardStyles.first()
+    val selectedStyleId by settingsViewModel.playerTeamStyleId.collectAsState()
 
     NavHost(navController = navController, startDestination = "game_screen") {
         composable(route = "game_screen") {
-            GameScreen(
-                navController = navController,
-                playerTeamStyle = playerTeamStyle,
-                boardStyle = boardStyle,
-                settingsViewModel = settingsViewModel
-            )
+            if (selectedStyleId != null) {
+                GameScreen(
+                    navController = navController,
+                    playerTeamStyle = playerTeamStyle,
+                    boardStyle = boardStyle,
+                    settingsViewModel = settingsViewModel
+                )
+            } else {
+                // Mostra un indicatore di caricamento mentre DataStore legge il valore
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
         }
         composable(route = "settings_screen") {
             SettingsScreen(
@@ -186,7 +197,7 @@ fun GameScreen(
     val musicVolume by settingsViewModel.musicVolume.collectAsState()
     val classicSongId by settingsViewModel.classicSongId.collectAsState()
     val teamStyleId by settingsViewModel.playerTeamStyleId.collectAsState()
-
+    Log.d("teamStyleId", "teamStyleId: $teamStyleId")
 
     var gameState by remember { mutableStateOf(GameState(pieces = emptyList())) }
     var selectedPieceCoords by remember { mutableStateOf<Posizione?>(null) }
@@ -207,21 +218,25 @@ fun GameScreen(
 
 
     val aiOpponent: AiOpponent? = remember(playerTeamStyle.id) {
-        availableOpponents.find { it.teamStyleId == playerTeamStyle.id }
+        availableOpponents.find {
+            it.id == playerTeamStyle.id
+        }
     }
 
     val aiTeamStyle: TeamStyle? = remember(aiOpponent) {
         aiOpponent?.let { opponent ->
-            availableTeamStyles.find { it.id == opponent.teamStyleId }
+            availableTeamStyles.find {
+                it.nationName == opponent.teamStyleId
+            }
         }
     }
 
 
     val coroutineScope = rememberCoroutineScope()
 
-    fun getTrackIdByName(name: String): Int? {
+    fun getTrackIdByName(name: String?): Int? {
         return when (name) {
-            "italy" -> R.raw.anthem_italy
+            "it" -> R.raw.anthem_italy
             "france" -> R.raw.anthem_france
             "germany" -> R.raw.anthem_germany
             "spain" -> R.raw.anthem_spain
