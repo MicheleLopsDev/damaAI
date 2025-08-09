@@ -16,11 +16,12 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun MainMenuScreen(
     onNavigateToGameActivity: () -> Unit,
+    onNavigateToOptions: () -> Unit,
     onNavigateToLlmManager: () -> Unit
 ) {
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("LoneWolfRedux") })
+            TopAppBar(title = { Text("damaAI") })
         }
     ) { innerPadding ->
         Column(
@@ -31,7 +32,6 @@ fun MainMenuScreen(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Prima riga
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceAround,
@@ -48,11 +48,24 @@ fun MainMenuScreen(
                     onClick = onNavigateToLlmManager
                 )
             }
+            Spacer(modifier = Modifier.height(32.dp)) // Spazio aggiuntivo
+
+            // --- NUOVA RIGA PER LE IMPOSTAZIONI ---
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center, // Centriamo l'icona
+                verticalAlignment = Alignment.Top
+            ) {
+                MenuIcon(
+                    icon = Icons.Default.Settings,
+                    label = "Opzioni",
+                    onClick = onNavigateToOptions // Usa la nuova funzione di navigazione
+                )
+            }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MenuIcon(
     icon: ImageVector,

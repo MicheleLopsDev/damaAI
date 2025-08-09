@@ -54,26 +54,6 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // --- VOCE PER IL NUOVO SOTTOMENÙ OPZIONI ---
-            item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { navController.navigate("options_screen") } // Naviga al sottomenù
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Tune, // Icona adatta per le opzioni
-                        contentDescription = "Opzioni",
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Text("Opzioni", style = MaterialTheme.typography.bodyLarge)
-                }
-            }
-
-            item { Divider() }
 
             // Le altre voci rimangono qui
             item {
@@ -131,91 +111,6 @@ fun SettingsScreen(
                     )
                     Spacer(modifier = Modifier.width(16.dp))
                     Text("Crediti", style = MaterialTheme.typography.bodyLarge)
-                }
-            }
-        }
-    }
-}
-
-
-// --- NUOVA SCHERMATA PER IL SOTTOMENÙ "OPZIONI" ---
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun OptionsScreen(
-    navController: NavController,
-    settingsViewModel: SettingsViewModel
-) {
-    val isDarkMode by settingsViewModel.isDarkModeEnabled.collectAsState()
-    val selectedDifficulty by settingsViewModel.difficultyLevel.collectAsState()
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Opzioni") },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Indietro")
-                    }
-                }
-            )
-        }
-    ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            // Sezione Modalità Scura
-            item {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                ) {
-                    Text(text = "Modalità Scura", style = MaterialTheme.typography.titleMedium)
-                    Switch(
-                        checked = isDarkMode,
-                        onCheckedChange = { settingsViewModel.setDarkMode(it) }
-                    )
-                }
-            }
-
-            item { Divider() }
-
-            // Sezione Difficoltà IA
-            item {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        "Livello Difficoltà IA",
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth().clickable { settingsViewModel.setDifficultyLevel("FACILE") }
-                    ) {
-                        RadioButton(selected = selectedDifficulty == "FACILE", onClick = { settingsViewModel.setDifficultyLevel("FACILE") })
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Facile")
-                    }
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth().clickable { settingsViewModel.setDifficultyLevel("MEDIO") }
-                    ) {
-                        RadioButton(selected = selectedDifficulty == "MEDIO", onClick = { settingsViewModel.setDifficultyLevel("MEDIO") })
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Medio")
-                    }
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth().clickable { settingsViewModel.setDifficultyLevel("DIFFICILE") }
-                    ) {
-                        RadioButton(selected = selectedDifficulty == "DIFFICILE", onClick = { settingsViewModel.setDifficultyLevel("DIFFICILE") })
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Difficile")
-                    }
                 }
             }
         }
@@ -309,60 +204,6 @@ fun CustomizationScreen(navController: NavController) {
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            item {
-                Text(
-                    text = "Scegli lo stile per le tue pedine:",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-            }
-            items(items = availableTeamStyles, key = { it.id }) { style ->
-                val isSelected = style.id == selectedTeamStyleId
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .border(
-                            width = 3.dp,
-                            color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                        .background(
-                            MaterialTheme.colorScheme.surfaceVariant,
-                            RoundedCornerShape(12.dp)
-                        )
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable { settingsViewModel.setPlayerTeamStyle(style.id) }
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Image(
-                        painter = painterResource(id = style.flagResId),
-                        contentDescription = "Bandiera ${style.nationName}",
-                        modifier = Modifier.size(40.dp).clip(CircleShape)
-                    )
-                    Spacer(modifier = Modifier.width(16.dp))
-
-                    // --- **FIX 2**: Aggiunto testo descrittivo per l'avversario ---
-                    Column {
-                        Text(text = style.nationName, style = MaterialTheme.typography.bodyLarge)
-
-                        // Trova l'avversario corrispondente allo stile
-                        val opponent = availableOpponents.find { it.teamStyleId == style.id }
-                        val opponentText = if (opponent != null) {
-                            "Avversario: ${opponent.name}"
-                        } else {
-                            "Modalità Classica (umano vs umano)"
-                        }
-
-                        Text(
-                            text = opponentText,
-                            style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.Light
-                        )
-                    }
-                    // --- Fine FIX 2 ---
-                }
-            }
             item {
                 Divider(modifier = Modifier.padding(vertical = 16.dp))
                 Text(

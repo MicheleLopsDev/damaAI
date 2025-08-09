@@ -27,6 +27,11 @@
             android:theme="@style/Theme.DamaAI">
         </activity>
         <activity
+            android:name=".OptionsActivity"
+            android:exported="false"
+            android:label="Opzioni"
+            android:theme="@style/Theme.DamaAI" />
+        <activity
             android:name=".LlmManagerActivity"
             android:exported="false"
             android:label="Gestione IA"

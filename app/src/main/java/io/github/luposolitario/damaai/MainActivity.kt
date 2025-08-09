@@ -18,6 +18,8 @@ class MainActivity : ComponentActivity() {
                     onNavigateToGameActivity = {
                         // Naviga alla libreria usando il nostro Navigator
                         AppNavigator.navigateToGameActivity(this)
+                    }, onNavigateToOptions = {
+                        AppNavigator.navigateToOptionsActivity(this)
                     },
                     // Lasciamo questo vuoto per ora, come da piano
                     onNavigateToLlmManager = {
