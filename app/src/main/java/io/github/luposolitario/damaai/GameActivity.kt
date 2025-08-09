@@ -82,6 +82,11 @@ fun AppNavigation(settingsViewModel: SettingsViewModel) {
         }
         composable(route = "settings_screen") {
             SettingsScreen(
+                navController = navController
+            )
+        }
+        composable(route = "options_screen") {
+            OptionsScreen(
                 navController = navController,
                 settingsViewModel = settingsViewModel
             )

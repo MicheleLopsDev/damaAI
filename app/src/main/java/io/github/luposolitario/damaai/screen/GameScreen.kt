@@ -4,38 +4,14 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.HelpOutline
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material3.Divider
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -57,17 +33,8 @@ import io.github.luposolitario.damaai.viewmodels.SettingsViewModelFactory
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    navController: NavController,
-    settingsViewModel: SettingsViewModel
+    navController: NavController
 ) {
-    val isDarkMode by settingsViewModel.isDarkModeEnabled.collectAsState(initial = isSystemInDarkTheme())
-    val selectedTeamStyleId by settingsViewModel.playerTeamStyleId.collectAsState()
-    val selectedBoardStyleId by settingsViewModel.boardStyleId.collectAsState()
-// --- LEGGIAMO LO STATO DELLA DIFFICOLTÀ ---
-    val selectedDifficulty by settingsViewModel.difficultyLevel.collectAsState()
-
-
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -81,92 +48,46 @@ fun SettingsScreen(
         }
     ) { paddingValues ->
         LazyColumn(
-            modifier = Modifier.Companion
+            modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-
-            // --- NUOVA SEZIONE PER LA DIFFICOLTÀ ---
-            item {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        "Livello Difficoltà IA",
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-
-                    // Opzione "Facile"
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth().clickable { settingsViewModel.setDifficultyLevel("FACILE") }
-                    ) {
-                        RadioButton(
-                            selected = selectedDifficulty == "FACILE",
-                            onClick = { settingsViewModel.setDifficultyLevel("FACILE") }
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Facile")
-                    }
-
-                    // Opzione "Medio"
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth().clickable { settingsViewModel.setDifficultyLevel("MEDIO") }
-                    ) {
-                        RadioButton(
-                            selected = selectedDifficulty == "MEDIO",
-                            onClick = { settingsViewModel.setDifficultyLevel("MEDIO") }
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Medio")
-                    }
-
-                    // Opzione "Difficile"
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth().clickable { settingsViewModel.setDifficultyLevel("DIFFICILE") }
-                    ) {
-                        RadioButton(
-                            selected = selectedDifficulty == "DIFFICILE",
-                            onClick = { settingsViewModel.setDifficultyLevel("DIFFICILE") }
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Difficile")
-                    }
-                }
-            }
-
-
+            // --- VOCE PER IL NUOVO SOTTOMENÙ OPZIONI ---
             item {
                 Row(
-                    verticalAlignment = Alignment.Companion.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier.Companion.fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { navController.navigate("options_screen") } // Naviga al sottomenù
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(text = "Modalità Scura", style = MaterialTheme.typography.titleMedium)
-                    Switch(
-                        checked = isDarkMode,
-                        onCheckedChange = { settingsViewModel.setDarkMode(it) })
+                    Icon(
+                        imageVector = Icons.Default.Tune, // Icona adatta per le opzioni
+                        contentDescription = "Opzioni",
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text("Opzioni", style = MaterialTheme.typography.bodyLarge)
                 }
             }
 
             item { Divider() }
 
+            // Le altre voci rimangono qui
             item {
                 Row(
-                    modifier = Modifier.Companion
+                    modifier = Modifier
                         .fillMaxWidth()
                         .clickable { navController.navigate("customization_screen") }
                         .padding(16.dp),
-                    verticalAlignment = Alignment.Companion.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         imageVector = Icons.Default.Palette,
                         contentDescription = "Personalizza Aspetto",
-                        modifier = Modifier.Companion.size(24.dp)
+                        modifier = Modifier.size(24.dp)
                     )
-                    Spacer(modifier = Modifier.Companion.width(16.dp))
+                    Spacer(modifier = Modifier.width(16.dp))
                     Text("Personalizza Aspetto", style = MaterialTheme.typography.bodyLarge)
                 }
             }
@@ -175,18 +96,18 @@ fun SettingsScreen(
 
             item {
                 Row(
-                    modifier = Modifier.Companion
+                    modifier = Modifier
                         .fillMaxWidth()
                         .clickable { navController.navigate("help_screen") }
                         .padding(16.dp),
-                    verticalAlignment = Alignment.Companion.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         imageVector = Icons.Default.HelpOutline,
                         contentDescription = "Aiuto",
-                        modifier = Modifier.Companion.size(24.dp)
+                        modifier = Modifier.size(24.dp)
                     )
-                    Spacer(modifier = Modifier.Companion.width(16.dp))
+                    Spacer(modifier = Modifier.width(16.dp))
                     Text("Aiuto", style = MaterialTheme.typography.bodyLarge)
                 }
             }
@@ -195,24 +116,112 @@ fun SettingsScreen(
 
             item {
                 Row(
-                    modifier = Modifier.Companion
+                    modifier = Modifier
                         .fillMaxWidth()
                         .clickable { navController.navigate("credits_screen") }
                         .padding(16.dp),
-                    verticalAlignment = Alignment.Companion.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         imageVector = Icons.Default.Info,
                         contentDescription = "Crediti",
-                        modifier = Modifier.Companion.size(24.dp)
+                        modifier = Modifier.size(24.dp)
                     )
-                    Spacer(modifier = Modifier.Companion.width(16.dp))
+                    Spacer(modifier = Modifier.width(16.dp))
                     Text("Crediti", style = MaterialTheme.typography.bodyLarge)
                 }
             }
         }
     }
 }
+
+
+// --- NUOVA SCHERMATA PER IL SOTTOMENÙ "OPZIONI" ---
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun OptionsScreen(
+    navController: NavController,
+    settingsViewModel: SettingsViewModel
+) {
+    val isDarkMode by settingsViewModel.isDarkModeEnabled.collectAsState()
+    val selectedDifficulty by settingsViewModel.difficultyLevel.collectAsState()
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Opzioni") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Indietro")
+                    }
+                }
+            )
+        }
+    ) { paddingValues ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            // Sezione Modalità Scura
+            item {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Text(text = "Modalità Scura", style = MaterialTheme.typography.titleMedium)
+                    Switch(
+                        checked = isDarkMode,
+                        onCheckedChange = { settingsViewModel.setDarkMode(it) }
+                    )
+                }
+            }
+
+            item { Divider() }
+
+            // Sezione Difficoltà IA
+            item {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        "Livello Difficoltà IA",
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().clickable { settingsViewModel.setDifficultyLevel("FACILE") }
+                    ) {
+                        RadioButton(selected = selectedDifficulty == "FACILE", onClick = { settingsViewModel.setDifficultyLevel("FACILE") })
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Facile")
+                    }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().clickable { settingsViewModel.setDifficultyLevel("MEDIO") }
+                    ) {
+                        RadioButton(selected = selectedDifficulty == "MEDIO", onClick = { settingsViewModel.setDifficultyLevel("MEDIO") })
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Medio")
+                    }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().clickable { settingsViewModel.setDifficultyLevel("DIFFICILE") }
+                    ) {
+                        RadioButton(selected = selectedDifficulty == "DIFFICILE", onClick = { settingsViewModel.setDifficultyLevel("DIFFICILE") })
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Difficile")
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+// ... (Le altre schermate come HelpScreen, CreditsScreen, CustomizationScreen rimangono invariate) ...
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
