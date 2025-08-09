@@ -21,6 +21,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -151,6 +152,7 @@ fun GameScreen(
     var chatMessages by remember { mutableStateOf<List<String>>(emptyList()) }
     var finalAiComment by remember { mutableStateOf<String?>(null) }
     var isAiThinking by remember { mutableStateOf(false) }
+    var turnoCorrente by remember { mutableStateOf(Colore.BIANCO) }
 
     val damaEngine: DamaEngine = remember { DamaEngineImpl() }
     val gemmaEngine = remember { GemmaEngine() }
@@ -203,7 +205,7 @@ fun GameScreen(
         validMoveDestinations = movesForPiece
     }
 
-    LaunchedEffect(aiOpponent) {
+    LaunchedEffect(playerTeamStyle.id) {
         chatMessages = emptyList()
         winner = null
         finalAiComment = null
@@ -211,6 +213,7 @@ fun GameScreen(
         val initialPieces = parseBoardState(damaEngine.getStatoScacchiera())
         val initialMandatory = damaEngine.getPezziConCatturaObbligatoria()
         gameState = gameState.copy(pieces = initialPieces, mandatoryCapturePieces = initialMandatory)
+        turnoCorrente = damaEngine.getTurnoCorrente()
 
         if (aiOpponent != null) {
             try {
@@ -221,7 +224,7 @@ fun GameScreen(
                         chatMessages = chatMessages + "${aiOpponent.name}: \"$comment\""
                     }
                 } else {
-                    chatMessages = chatMessages + "ERRORE: Modello IA non trovato. Scaricalo da 'Gestione IA'."
+                    chatMessages = chatMessages + "ERRORE: Modello IA non trovato."
                 }
             } catch (e: Exception) {
                 Log.e("GemmaIntegration", "Errore caricamento modello Gemma", e)
@@ -269,9 +272,7 @@ fun GameScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     BoardRanks(modifier = Modifier.width(24.dp))
-                    Box(modifier = Modifier
-                        .weight(1f)
-                        .aspectRatio(1f)) {
+                    Box(modifier = Modifier.weight(1f).aspectRatio(1f)) {
                         GameBoardArea(
                             gameState = gameState,
                             playerTeamStyle = playerTeamStyle,
@@ -287,53 +288,56 @@ fun GameScreen(
                                         val startNotation = selectedPieceCoords!!.toNotazioneAlgebrica()
                                         val endNotation = clickedPos.toNotazioneAlgebrica()
                                         val moveString = "$startNotation $endNotation"
-                                        val mossaUmano = damaEngine.muoviPezzoUmano(moveString)
 
-                                        if (mossaUmano != null) {
-                                            chatMessages = chatMessages + "Tua mossa: $moveString"
-                                            val pedinaCatturataUmano = damaEngine.trovaPedinaCatturata(mossaUmano)
-                                            val piecesAfterHumanMove = parseBoardState(damaEngine.getStatoScacchiera())
-                                            gameState = gameState.copy(pieces = piecesAfterHumanMove)
-                                            handleCaptureAnimation(pedinaCatturataUmano)
+                                        val mossaEseguita = damaEngine.muoviPezzoUmano(moveString)
 
-                                            if (aiOpponent != null) {
-                                                val winnerAfterHumanMove = damaEngine.getVincitore()
-                                                if (winnerAfterHumanMove == null) {
-                                                    val mossaIA = damaEngine.faiMossaIA()
-                                                    if (mossaIA != null) {
-                                                        chatMessages = chatMessages + "Mossa IA: ${mossaIA.toString()}"
-                                                        val pedinaCatturataIA = damaEngine.trovaPedinaCatturata(mossaIA)
-                                                        if (pedinaCatturataIA != null) {
-                                                            generateComment(aiOpponent.capturePrompt) { comment ->
-                                                                chatMessages = chatMessages + "${aiOpponent.name}: \"$comment\""
-                                                            }
+                                        if (mossaEseguita != null) {
+                                            val playerColorText = if (turnoCorrente == Colore.BIANCO) "Bianco" else "Nero"
+                                            chatMessages = chatMessages + "Mossa $playerColorText: $moveString"
+
+                                            val pedinaCatturata = damaEngine.trovaPedinaCatturata(mossaEseguita)
+                                            val piecesAfterMove = parseBoardState(damaEngine.getStatoScacchiera())
+                                            gameState = gameState.copy(pieces = piecesAfterMove)
+                                            handleCaptureAnimation(pedinaCatturata)
+
+                                            if (aiOpponent != null && damaEngine.getVincitore() == null) {
+                                                val mossaIA = damaEngine.faiMossaIA()
+                                                if (mossaIA != null) {
+                                                    chatMessages = chatMessages + "Mossa IA: ${mossaIA.toString()}"
+                                                    val pedinaCatturataIA = damaEngine.trovaPedinaCatturata(mossaIA)
+                                                    if (pedinaCatturataIA != null) {
+                                                        generateComment(aiOpponent.capturePrompt) { comment ->
+                                                            chatMessages = chatMessages + "${aiOpponent.name}: \"$comment\""
                                                         }
-                                                        val finalPieces = parseBoardState(damaEngine.getStatoScacchiera())
-                                                        val mandatoryForHuman = damaEngine.getPezziConCatturaObbligatoria()
-                                                        gameState = gameState.copy(pieces = finalPieces, mandatoryCapturePieces = mandatoryForHuman)
-                                                        handleCaptureAnimation(pedinaCatturataIA)
                                                     }
+                                                    val finalPieces = parseBoardState(damaEngine.getStatoScacchiera())
+                                                    gameState = gameState.copy(pieces = finalPieces)
+                                                    handleCaptureAnimation(pedinaCatturataIA)
                                                 }
                                             }
+                                            turnoCorrente = damaEngine.getTurnoCorrente()
+                                            gameState = gameState.copy(mandatoryCapturePieces = damaEngine.getPezziConCatturaObbligatoria())
                                         }
 
                                         selectedPieceCoords = null
                                         validMoveDestinations = emptyList()
 
-                                        damaEngine.getVincitore()?.let { vincitore ->
-                                            winner = vincitore
-                                            if (aiOpponent != null) {
-                                                val finalPrompt = if (vincitore == Colore.NERO) aiOpponent.victoryPrompt else aiOpponent.defeatPrompt
-                                                generateComment(finalPrompt) { comment ->
-                                                    finalAiComment = comment
-                                                }
-                                            }
-                                        }
-
                                     } else {
-                                        if (pieceAtPos != null && pieceAtPos.color == PlayerColor.WHITE) {
+                                        val pezzoColoreCorretto = when (turnoCorrente) {
+                                            Colore.BIANCO -> pieceAtPos?.color == PlayerColor.WHITE
+                                            Colore.NERO -> pieceAtPos?.color == PlayerColor.BLACK
+                                        }
+                                        if (pieceAtPos != null && pezzoColoreCorretto) {
                                             selectedPieceCoords = clickedPos
                                             getValidMovesForSelectedPiece()
+                                        }
+                                    }
+
+                                    damaEngine.getVincitore()?.let { vincitore ->
+                                        winner = vincitore
+                                        if (aiOpponent != null) {
+                                            val finalPrompt = if (vincitore == Colore.NERO) aiOpponent.victoryPrompt else aiOpponent.defeatPrompt
+                                            generateComment(finalPrompt) { comment -> finalAiComment = comment }
                                         }
                                     }
                                 }
@@ -355,33 +359,48 @@ fun GameScreen(
                     Spacer(modifier = Modifier.width(24.dp))
                 }
                 Spacer(Modifier.height(16.dp))
-                AIOpponentHeader(
-                    name = aiOpponent?.name ?: "Partita Classica",
-                    isThinking = isAiThinking
-                )
-                Divider(modifier = Modifier.padding(vertical = 12.dp))
+
+                // **FIX**: Rimosso il blocco duplicato. Questo è l'unico header.
                 if (aiOpponent != null) {
-                    ChatDisplayArea(messages = chatMessages, modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f))
-                    ChatInputArea(modifier = Modifier.fillMaxWidth())
+                    AIOpponentHeader(name = aiOpponent.name, isThinking = isAiThinking)
                 } else {
-                    Box(modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f), contentAlignment = Alignment.Center) {
-                        Text(
-                            text = "Modalità Classica.\nSeleziona una nazione nelle impostazioni per sfidare un avversario.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            textAlign = TextAlign.Center
-                        )
-                    }
+                    TurnoGiocatoreHeader(turnoCorrente = turnoCorrente)
+                }
+
+                Divider(modifier = Modifier.padding(vertical = 12.dp))
+
+                ChatDisplayArea(messages = chatMessages, modifier = Modifier.fillMaxWidth().weight(1f))
+
+                if (aiOpponent != null) {
+                    ChatInputArea(modifier = Modifier.fillMaxWidth())
                 }
             }
         }
     }
 }
 
-// ---- FUNZIONI DI SUPPORTO PER LA UI ----
+@Composable
+fun TurnoGiocatoreHeader(turnoCorrente: Colore, modifier: Modifier = Modifier) {
+    val testoTurno = if (turnoCorrente == Colore.BIANCO) "Turno del Bianco" else "Turno del Nero"
+    val coloreIcona = if (turnoCorrente == Colore.BIANCO) Color.White else Color.Black
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(start = 8.dp, end = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .border(2.dp, coloreIcona, CircleShape)
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(text = testoTurno, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+    }
+}
 
 @Composable
 fun AIOpponentHeader(name: String, isThinking: Boolean, modifier: Modifier = Modifier) {

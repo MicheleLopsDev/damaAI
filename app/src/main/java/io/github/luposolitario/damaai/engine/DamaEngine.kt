@@ -61,4 +61,9 @@ interface DamaEngine {
      * @return Una lista di stringhe, dove ogni stringa è una mossa valida (es. "C7 B6").
      */
     fun getMosseValide(): List<String>
+
+    /**
+     * Restituisce il colore del giocatore di turno.
+     */
+    fun getTurnoCorrente(): Colore
 }

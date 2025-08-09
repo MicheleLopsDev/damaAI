@@ -13,6 +13,11 @@ class DamaEngineImpl : DamaEngine {
     // Memorizziamo lo stato precedente per trovare la pedina catturata
     private var statoPrecedente: String = ""
 
+    override fun getTurnoCorrente(): Colore {
+        // Aggiungiamo un valore di default nel caso la partita non sia ancora iniziata
+        return partita?.getTurno() ?: Colore.BIANCO
+    }
+
     override fun nuovaPartita(difficolta: Difficolta) {
         Log.d(TAG, "nuovaPartita chiamata con difficoltà: $difficolta")
         partita = PartitaDiDama(difficolta)
