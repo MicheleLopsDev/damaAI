@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -46,6 +47,7 @@ fun OptionsScreen(
     val selectedTeamStyleId by settingsViewModel.playerTeamStyleId.collectAsState()
     val musicVolume by settingsViewModel.musicVolume.collectAsState()
     val selectedClassicSongId by settingsViewModel.classicSongId.collectAsState()
+    val isDarkMode by settingsViewModel.isDarkModeEnabled.collectAsState(initial = isSystemInDarkTheme())
 
     val classicSongs = remember {
         listOf(
@@ -144,6 +146,22 @@ fun OptionsScreen(
                             fontWeight = FontWeight.Light
                         )
                     }
+                }
+            }
+
+            item { Divider(modifier = Modifier.padding(vertical = 16.dp)) }
+
+            item {
+                Row(
+                    verticalAlignment = Alignment.Companion.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.Companion.fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Text(text = "Modalità Scura", style = MaterialTheme.typography.titleMedium)
+                    Switch(
+                        checked = isDarkMode,
+                        onCheckedChange = { settingsViewModel.setDarkMode(it) })
                 }
             }
 

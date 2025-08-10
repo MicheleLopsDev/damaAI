@@ -32,7 +32,9 @@ class SettingsManager(private val context: Context) {
     // --- Gestione Tema Scuro (invariata) ---
     val isDarkModeEnabledFlow: Flow<Boolean> = context.dataStore.data.map { it[IS_DARK_MODE_ENABLED] ?: false }
     suspend fun setDarkMode(isEnabled: Boolean) {
-        context.dataStore.edit { it[IS_DARK_MODE_ENABLED] = isEnabled }
+        context.dataStore.edit {
+            it[IS_DARK_MODE_ENABLED] = isEnabled
+        }
     }
 
     // --- Gestione Stile Pedine (invariata) ---

@@ -18,7 +18,9 @@ class SettingsViewModel(
     val isDarkModeEnabled: StateFlow<Boolean> = settingsManager.isDarkModeEnabledFlow
         .stateIn(scope = viewModelScope, started = SharingStarted.WhileSubscribed(5000), initialValue = false)
     fun setDarkMode(isEnabled: Boolean) {
-        viewModelScope.launch { settingsManager.setDarkMode(isEnabled) }
+        viewModelScope.launch {
+            settingsManager.setDarkMode(isEnabled)
+        }
     }
 
     // --- Gestione Stile Pedine (invariata) ---
