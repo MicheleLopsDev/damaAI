@@ -32,6 +32,7 @@ import io.github.luposolitario.damaai.R
 import io.github.luposolitario.damaai.data.availableOpponents
 import io.github.luposolitario.damaai.data.availableTeamStyles
 import io.github.luposolitario.damaai.media.MusicManager
+import io.github.luposolitario.damaai.utils.getTrackIdByName
 import io.github.luposolitario.damaai.viewmodels.SettingsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -54,23 +55,6 @@ fun OptionsScreen(
             "classic_4" to "Canzone Classica 4",
             "classic_5" to "Canzone Classica 5"
         )
-    }
-
-    fun getTrackIdByName(name: String): Int? {
-        return when (name.split("_")[0]) {
-            "italy" -> R.raw.anthem_italy
-            "fr" -> R.raw.anthem_france
-            "de" -> R.raw.anthem_germany
-            "es" -> R.raw.anthem_spain
-            "uk" -> R.raw.anthem_uk
-            "us" -> R.raw.anthem_usa
-            "classic_1" -> R.raw.classic_1
-            "classic_2" -> R.raw.classic_2
-            "classic_3" -> R.raw.classic_3
-            "classic_4" -> R.raw.classic_4
-            "classic_5" -> R.raw.classic_5
-            else -> null
-        }
     }
 
     // Stop music when leaving the screen

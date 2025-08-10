@@ -55,6 +55,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import androidx.core.content.FileProvider
+import io.github.luposolitario.damaai.utils.getTrackIdByName
 import java.io.File
 import java.io.FileOutputStream
 
@@ -234,22 +235,8 @@ fun GameScreen(
 
     val coroutineScope = rememberCoroutineScope()
 
-    fun getTrackIdByName(name: String?): Int? {
-        return when (name) {
-            "it" -> R.raw.anthem_italy
-            "france" -> R.raw.anthem_france
-            "germany" -> R.raw.anthem_germany
-            "spain" -> R.raw.anthem_spain
-            "uk" -> R.raw.anthem_uk
-            "usa" -> R.raw.anthem_usa
-            "classic_1" -> R.raw.classic_1
-            "classic_2" -> R.raw.classic_2
-            "classic_3" -> R.raw.classic_3
-            "classic_4" -> R.raw.classic_4
-            "classic_5" -> R.raw.classic_5
-            else -> null
-        }
-    }
+
+
 
     fun generateComment(prompt: String) { // Rimosso il parametro onResult
         aiOpponent ?: return
@@ -461,7 +448,9 @@ fun GameScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     BoardRanks(modifier = Modifier.width(24.dp))
-                    Box(modifier = Modifier.weight(1f).aspectRatio(1f)) {
+                    Box(modifier = Modifier
+                        .weight(1f)
+                        .aspectRatio(1f)) {
                         GameBoardArea(
                             gameState = gameState,
                             playerTeamStyle = playerTeamStyle,
@@ -557,7 +546,9 @@ fun GameScreen(
 
                 Divider(modifier = Modifier.padding(vertical = 12.dp))
 
-                ChatDisplayArea(messages = chatMessages, modifier = Modifier.fillMaxWidth().weight(1f))
+                ChatDisplayArea(messages = chatMessages, modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f))
 
                 if (aiOpponent == null) {
                     ChatInputArea(
@@ -606,7 +597,10 @@ fun AIOpponentHeader(name: String, isThinking: Boolean, modifier: Modifier = Mod
         Image(
             imageVector = Icons.Default.AccountCircle,
             contentDescription = "Avatar dell'avversario AI",
-            modifier = Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant)
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
         )
         Spacer(modifier = Modifier.width(12.dp))
         Column {
@@ -630,7 +624,10 @@ fun ChatDisplayArea(messages: List<String>, modifier: Modifier = Modifier) {
     LazyColumn(
         state = listState,
         modifier = modifier
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+            .background(
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                RoundedCornerShape(8.dp)
+            )
             .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
             .padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
