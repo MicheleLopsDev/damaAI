@@ -77,7 +77,7 @@ class SettingsManager(private val context: Context) {
     val musicVolumeFlow: Flow<Float> = context.dataStore.data
         .map { preferences ->
             // Se non c'è un valore salvato, usiamo 0.5f come default.
-            preferences[MUSIC_VOLUME] ?: 0.5f
+            preferences[MUSIC_VOLUME] ?: 0.05f
         }
 
     // --- NUOVO: Funzione per salvare il volume della musica ---

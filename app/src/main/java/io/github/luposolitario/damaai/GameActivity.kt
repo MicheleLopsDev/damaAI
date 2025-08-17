@@ -1,5 +1,8 @@
 package io.github.luposolitario.damaai
 
+import android.content.Intent
+import android.graphics.Bitmap
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -15,7 +18,9 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,15 +31,18 @@ import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import io.github.luposolitario.damaai.data.*
+import io.github.luposolitario.damaai.datastore.ModelSettingsManager
 import io.github.luposolitario.damaai.engine.DamaEngine
 import io.github.luposolitario.damaai.engine.DamaEngineImpl
 import io.github.luposolitario.damaai.engine.GemmaEngine
@@ -43,20 +51,15 @@ import io.github.luposolitario.damaai.game_logic.Difficolta
 import io.github.luposolitario.damaai.game_logic.Posizione
 import io.github.luposolitario.damaai.media.MusicManager
 import io.github.luposolitario.damaai.screen.*
+import io.github.luposolitario.damaai.ui.screen.HelpScreen
 import io.github.luposolitario.damaai.ui.screen.OptionsScreen
-import io.github.luposolitario.damaai.ui.theme.DamaAITheme
+import io.github.luposolitario.damaai.ui.theme.*
+import io.github.luposolitario.damaai.utils.getTrackIdByName
 import io.github.luposolitario.damaai.viewmodels.SettingsViewModel
 import io.github.luposolitario.damaai.viewmodels.SettingsViewModelFactory
-import io.github.luposolitario.damaai.datastore.ModelSettingsManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.launch
-import android.content.Intent
-import android.graphics.Bitmap
-import android.net.Uri
-import androidx.core.content.FileProvider
-import io.github.luposolitario.damaai.ui.screen.HelpScreen
-import io.github.luposolitario.damaai.utils.getTrackIdByName
 import java.io.File
 import java.io.FileOutputStream
 
@@ -112,7 +115,6 @@ fun AppNavigation(settingsViewModel: SettingsViewModel) {
                     settingsViewModel = settingsViewModel
                 )
             } else {
-                // Mostra un indicatore di caricamento mentre DataStore legge il valore
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -190,22 +192,21 @@ fun GameScreen(
     navController: NavController,
     playerTeamStyle: TeamStyle,
     boardStyle: BoardStyle,
-    settingsViewModel: SettingsViewModel // <-- AGGIUNTO VIEWMODEL
+    settingsViewModel: SettingsViewModel
 ) {
     val context = LocalView.current.context
     val view = LocalView.current
 
-    // --- Leggiamo le impostazioni musicali ---
     val musicVolume by settingsViewModel.musicVolume.collectAsState()
     val classicSongId by settingsViewModel.classicSongId.collectAsState()
     val teamStyleId by settingsViewModel.playerTeamStyleId.collectAsState()
-    Log.d("teamStyleId", "teamStyleId: $teamStyleId")
 
     var gameState by remember { mutableStateOf(GameState(pieces = emptyList())) }
     var selectedPieceCoords by remember { mutableStateOf<Posizione?>(null) }
     var validMoveDestinations by remember { mutableStateOf<List<Posizione>>(emptyList()) }
     var winner by remember { mutableStateOf<Colore?>(null) }
     var chatMessages by remember { mutableStateOf<List<String>>(emptyList()) }
+    var llmChatMessages by remember { mutableStateOf<List<String>>(emptyList()) }
     var finalAiComment by remember { mutableStateOf<String?>(null) }
     var isAiThinking by remember { mutableStateOf(false) }
     var turnoCorrente by remember { mutableStateOf(Colore.BIANCO) }
@@ -215,9 +216,7 @@ fun GameScreen(
     val damaEngine: DamaEngine = remember { DamaEngineImpl() }
     val gemmaEngine = remember { GemmaEngine() }
 
-    // ---- LEGGIAMO LA DIFFICOLTÀ DAL VIEWMODEL ----
     val selectedDifficulty by settingsViewModel.difficultyLevel.collectAsState()
-    Log.d("GameDebug", "Stato di selectedDifficulty aggiornato a: $selectedDifficulty")
 
     val aiOpponent: AiOpponent? = remember(playerTeamStyle.id) {
         availableOpponents.find {
@@ -233,19 +232,15 @@ fun GameScreen(
         }
     }
 
-
     val coroutineScope = rememberCoroutineScope()
 
-
-
-
-    fun generateComment(prompt: String) { // Rimosso il parametro onResult
+    fun generateComment(prompt: String) {
         aiOpponent ?: return
         isAiThinking = true
 
-        // 1. Aggiungi subito un segnaposto vuoto per il messaggio dell'IA
         val initialMessage = "${aiOpponent.name}: \"\""
-        chatMessages = chatMessages + initialMessage
+        Log.d("LlmChatLog", "Adding initial placeholder: $initialMessage")
+        llmChatMessages = llmChatMessages + initialMessage
 
         coroutineScope.launch {
             val fullPrompt = "${aiOpponent.chatStylePrompt}\n\n$prompt"
@@ -254,19 +249,21 @@ fun GameScreen(
                 gemmaEngine.generateMove(fullPrompt, damaEngine.getStatoScacchiera())
                     .onCompletion {
                         isAiThinking = false
+                        if (llmChatMessages.isNotEmpty()) {
+                            Log.d("LlmChatLog", "Generation complete. Final message: ${llmChatMessages.last()}")
+                        }
                     }
                     .collect { partialResponse ->
-                        // 2. Aggiorna l'ultimo messaggio della lista con ogni nuovo pezzo
-                        val lastMessageIndex = chatMessages.lastIndex
-                        val updatedMessage = chatMessages[lastMessageIndex] + partialResponse
-                        // Crea una nuova lista per notificare il cambiamento a Compose
-                        chatMessages = chatMessages.toMutableList().also { it[lastMessageIndex] = updatedMessage }
+                        val lastMessageIndex = llmChatMessages.lastIndex
+                        if (lastMessageIndex >= 0) {
+                            val updatedMessage = llmChatMessages[lastMessageIndex] + partialResponse
+                            llmChatMessages = llmChatMessages.toMutableList().also { it[lastMessageIndex] = updatedMessage }
+                        }
                     }
             } catch (e: Exception) {
                 Log.e("GemmaIntegration", "Errore durante la generazione della risposta", e)
                 isAiThinking = false
-                // Opzionale: Rimuovi il segnaposto in caso di errore
-                chatMessages = chatMessages.dropLast(1)
+                llmChatMessages = llmChatMessages.dropLast(1)
             }
         }
     }
@@ -284,7 +281,9 @@ fun GameScreen(
                 val mossaEseguita = damaEngine.muoviPezzoUmano(mossaTestuale)
                 if (mossaEseguita != null) {
                     val playerColorText = if (turnoCorrente == Colore.BIANCO) "Bianco" else "Nero"
-                    chatMessages = chatMessages + "Mossa $playerColorText: $mossaTestuale"
+                    val logMessage = "Mossa $playerColorText: $mossaTestuale"
+                    Log.d("ChatLog", "Adding move log: $logMessage")
+                    chatMessages = chatMessages + logMessage
 
                     val pedinaCatturata = damaEngine.trovaPedinaCatturata(mossaEseguita)
                     val piecesAfterMove = parseBoardState(damaEngine.getStatoScacchiera())
@@ -300,7 +299,9 @@ fun GameScreen(
                         winner = vincitore
                     }
                 } else {
-                    chatMessages = chatMessages + "Mossa non valida: $mossaTestuale"
+                    val logMessage = "Mossa non valida: $mossaTestuale"
+                    Log.d("ChatLog", "Adding invalid move log: $logMessage")
+                    chatMessages = chatMessages + logMessage
                 }
             }
         }
@@ -321,33 +322,29 @@ fun GameScreen(
     LaunchedEffect(teamStyleId, classicSongId) {
         MusicManager.setVolume(musicVolume)
         val songToPlayId = if (teamStyleId == "default") {
-            classicSongId // Usa la canzone classica salvata
+            classicSongId
         } else {
-            teamStyleId   // Usa l'inno nazionale
+            teamStyleId
         }
 
-        Log.d("MusicDebug", "EFFECT MUSICALE: Canzone da riprodurre: $songToPlayId")
         getTrackIdByName(songToPlayId)?.let { trackId ->
             MusicManager.setVolume(musicVolume)
             MusicManager.play(context, trackId)
         }
     }
 
-    LaunchedEffect(playerTeamStyle.id,selectedDifficulty) {
-        Log.d("GameDebug", "LaunchedEffect partito. Difficoltà attuale: $selectedDifficulty")
-
+    LaunchedEffect(playerTeamStyle.id) {
+        Log.d("GameDebug", "LaunchedEffect di inizializzazione eseguito con difficoltà: $selectedDifficulty")
         chatMessages = emptyList()
+        llmChatMessages = emptyList()
         winner = null
         finalAiComment = null
-        // --- **FIX 1**: Utilizziamo la difficoltà dalle impostazioni ---
         val difficoltaAttuale = try {
             Difficolta.valueOf(selectedDifficulty)
         } catch (e: IllegalArgumentException) {
-            Difficolta.FACILE // Valore di fallback
+            Difficolta.FACILE
         }
-        Log.d("GameDebug", "Inizializzo nuova partita con difficoltà: $difficoltaAttuale")
         damaEngine.nuovaPartita(difficoltaAttuale)
-        // --- FINE FIX ---
         val initialPieces = parseBoardState(damaEngine.getStatoScacchiera())
         val initialMandatory = damaEngine.getPezziConCatturaObbligatoria()
         gameState = gameState.copy(pieces = initialPieces, mandatoryCapturePieces = initialMandatory)
@@ -360,7 +357,9 @@ fun GameScreen(
                     gemmaEngine.load(context, modelPath)
                     generateComment(aiOpponent.openingPrompt)
                 } else {
-                    chatMessages = chatMessages + "ERRORE: Modello LLM non trovato."
+                    val errorMessage = "ERRORE: Modello LLM non trovato."
+                    Log.e("ChatLog", errorMessage)
+                    chatMessages = chatMessages + errorMessage
                 }
             } catch (e: Exception) {
                 Log.e("GemmaIntegration", "Errore caricamento modello Gemma", e)
@@ -371,7 +370,6 @@ fun GameScreen(
     DisposableEffect(Unit) {
         onDispose {
             coroutineScope.launch { gemmaEngine.unload() }
-            // Stoppiamo la musica quando si esce dalla schermata di gioco
             MusicManager.stop()
         }
     }
@@ -412,7 +410,6 @@ fun GameScreen(
                                         type = "image/png"
                                         putExtra(Intent.EXTRA_STREAM, it)
                                         putExtra(Intent.EXTRA_TEXT, testoCompleto)
-                                        //setPackage("com.whatsapp")
                                         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                     }
                                     context.startActivity(Intent.createChooser(intent, "Condividi partita con..."))
@@ -476,7 +473,9 @@ fun GameScreen(
 
                                         if (mossaEseguita != null) {
                                             val playerColorText = if (turnoCorrente == Colore.BIANCO) "Bianco" else "Nero"
-                                            chatMessages = chatMessages + "Mossa $playerColorText: $moveString"
+                                            val playerMoveLog = "Mossa $playerColorText: $moveString"
+                                            Log.d("ChatLog", "Adding player move: $playerMoveLog")
+                                            chatMessages = chatMessages + playerMoveLog
 
                                             val pedinaCatturata = damaEngine.trovaPedinaCatturata(mossaEseguita)
                                             val piecesAfterMove = parseBoardState(damaEngine.getStatoScacchiera())
@@ -486,7 +485,9 @@ fun GameScreen(
                                             if (aiOpponent != null && damaEngine.getVincitore() == null) {
                                                 val mossaIA = damaEngine.faiMossaIA()
                                                 if (mossaIA != null) {
-                                                    chatMessages = chatMessages + "Mossa IA: ${mossaIA.toString()}"
+                                                    val aiMoveLog = "Mossa IA: ${mossaIA.toString()}"
+                                                    Log.d("ChatLog", "Adding AI move: $aiMoveLog")
+                                                    chatMessages = chatMessages + aiMoveLog
                                                     val pedinaCatturataIA = damaEngine.trovaPedinaCatturata(mossaIA)
                                                     if (pedinaCatturataIA != null) {
                                                         generateComment(aiOpponent.capturePrompt)
@@ -531,8 +532,9 @@ fun GameScreen(
                                 opponentName = aiOpponent?.name,
                                 finalComment = finalAiComment,
                                 onPlayAgain = {
-                                    winner = null
-                                    finalAiComment = null
+                                    navController.navigate("game_screen") {
+                                        popUpTo("game_screen") { inclusive = true }
+                                    }
                                 }
                             )
                         }
@@ -541,7 +543,6 @@ fun GameScreen(
                 }
                 Spacer(Modifier.height(16.dp))
 
-                // **FIX**: Rimosso il blocco duplicato. Questo è l'unico header.
                 if (aiOpponent != null) {
                     AIOpponentHeader(name = aiOpponent.name, isThinking = isAiThinking)
                 } else {
@@ -550,9 +551,35 @@ fun GameScreen(
 
                 Divider(modifier = Modifier.padding(vertical = 12.dp))
 
-                ChatDisplayArea(messages = chatMessages, modifier = Modifier
+                Column(modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f))
+                    .weight(1f)) {
+                    ChatDisplayArea(
+                        messages = llmChatMessages,
+                        backgroundColor = BotChatBackground,
+                        textStyle = TextStyle(
+                            fontFamily = NotoSerif,
+                            fontSize = 16.sp,
+                            color = BotTextColor
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    ChatDisplayArea(
+                        messages = chatMessages,
+                        backgroundColor = LogChatBackground,
+                        textStyle = TextStyle(
+                            fontFamily = RobotoMono,
+                            fontSize = 14.sp,
+                            color = LogTextColor
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(80.dp)
+                    )
+                }
 
                 if (aiOpponent == null) {
                     ChatInputArea(
@@ -617,19 +644,32 @@ fun AIOpponentHeader(name: String, isThinking: Boolean, modifier: Modifier = Mod
 }
 
 @Composable
-fun ChatDisplayArea(messages: List<String>, modifier: Modifier = Modifier) {
+fun ChatDisplayArea(
+    messages: List<String>,
+    modifier: Modifier = Modifier,
+    backgroundColor: Color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+    textStyle: TextStyle = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurface)
+) {
     val listState = rememberLazyListState()
-    LaunchedEffect(messages.size) {
+
+    // ===============================================================
+    // ==== FIX: SCROLL AUTOMATICO DISABILITATO ====
+    // Ho commentato il LaunchedEffect per darti il pieno
+    // controllo manuale dello scroll, come richiesto.
+    // ===============================================================
+    /*
+    LaunchedEffect(messages.size, messages.lastOrNull()) {
         if (messages.isNotEmpty()) {
-            listState.animateScrollToItem(messages.size)
+            listState.animateScrollToItem(messages.size - 1)
         }
     }
+    */
 
     LazyColumn(
         state = listState,
         modifier = modifier
             .background(
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                backgroundColor,
                 RoundedCornerShape(8.dp)
             )
             .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
@@ -639,8 +679,7 @@ fun ChatDisplayArea(messages: List<String>, modifier: Modifier = Modifier) {
         items(messages) { message ->
             Text(
                 text = message,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
+                style = textStyle
             )
         }
     }

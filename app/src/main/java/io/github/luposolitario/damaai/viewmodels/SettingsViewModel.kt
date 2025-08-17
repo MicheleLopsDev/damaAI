@@ -66,7 +66,7 @@ class SettingsViewModel(
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = 0.5f
+            initialValue = 0.05f
         )
 
     // --- NUOVO: Funzione per salvare il volume della musica ---
