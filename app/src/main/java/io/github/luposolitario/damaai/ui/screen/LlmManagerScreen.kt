@@ -46,7 +46,7 @@ fun LlmManagerScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Gestione Modello IA") })
+            TopAppBar(title = { Text("Gestione Modello LLM") })
         }
     ) { paddingValues ->
         Column(
@@ -72,7 +72,7 @@ fun LlmManagerScreen(
             if (isTokenPresent) {
                 Divider(modifier = Modifier.padding(vertical = 8.dp))
                 Text(
-                    text = "Modello Traduzione Avanzata",
+                    text = "Modello LLM Avanzato",
                     style = MaterialTheme.typography.titleLarge
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -85,7 +85,7 @@ fun LlmManagerScreen(
                     Column(modifier = Modifier.weight(1f)) {
                         Text("gemma-3n-E4B-it-int4", style = MaterialTheme.typography.bodyLarge)
                         Text(
-                            "Modello di traduzione ottimizzato.",
+                            "Modello di llm ottimizzato.",
                             style = MaterialTheme.typography.bodySmall
                         )
                     }

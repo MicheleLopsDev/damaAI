@@ -16,12 +16,7 @@ fun CreditsScreen(onBackPressed: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Crediti") },
-                navigationIcon = {
-                    IconButton(onClick = onBackPressed) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Indietro")
-                    }
-                }
+                title = { Text("Crediti") }
             )
         }
     ) { innerPadding ->

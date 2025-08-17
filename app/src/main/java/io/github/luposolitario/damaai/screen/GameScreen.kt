@@ -120,42 +120,14 @@ fun SettingsScreen(
 
 // ... (Le altre schermate come HelpScreen, CreditsScreen, CustomizationScreen rimangono invariate) ...
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun HelpScreen(navController: NavController) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Aiuto") },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Indietro")
-                    }
-                }
-            )
-        }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier.Companion.fillMaxSize().padding(paddingValues).padding(16.dp),
-            contentAlignment = Alignment.Companion.Center
-        ) {
-            Text("Qui ci saranno le istruzioni del gioco.")
-        }
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreditsScreen(navController: NavController) {
+fun CreditsScreen() {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Crediti") },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Indietro")
-                    }
-                }
+                title = { Text("Crediti") }
             )
         }
     ) { paddingValues ->
@@ -176,7 +148,7 @@ fun CreditsScreen(navController: NavController) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CustomizationScreen(navController: NavController) {
+fun CustomizationScreen() {
     val application = (LocalView.current.context.applicationContext as DamaAIApplication)
     val settingsViewModel: SettingsViewModel = viewModel(
         factory = SettingsViewModelFactory(application.settingsManager)
@@ -188,12 +160,7 @@ fun CustomizationScreen(navController: NavController) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Personalizza") }, // <-- **FIX 1: Titolo modificato**
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Indietro")
-                    }
-                }
+                title = { Text("Personalizza") }
             )
         }
     ) { paddingValues ->

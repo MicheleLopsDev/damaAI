@@ -67,7 +67,7 @@ class ModelDownloadWorker(
 
     private fun buildNotification(progress: Int, cancelIntent: PendingIntent?): NotificationCompat.Builder {
         return NotificationCompat.Builder(applicationContext, CHANNEL_ID)
-            .setContentTitle("Download Modello IA")
+            .setContentTitle("Download Modello LLM")
             .setContentText("Progresso: $progress% (4.3 GB)")
             .setSmallIcon(android.R.drawable.stat_sys_download)
             .setOngoing(true)

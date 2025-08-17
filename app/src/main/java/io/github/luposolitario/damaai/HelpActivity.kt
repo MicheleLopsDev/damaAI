@@ -23,7 +23,7 @@ class HelpActivity : ComponentActivity() {
             val useDarkTheme by settingsViewModel.isDarkModeEnabled.collectAsState(initial = isSystemInDarkTheme())
 
             DamaAITheme(darkTheme = useDarkTheme) {
-                HelpScreen(onBackPressed = { finish() })
+                HelpScreen()
             }
         }
     }

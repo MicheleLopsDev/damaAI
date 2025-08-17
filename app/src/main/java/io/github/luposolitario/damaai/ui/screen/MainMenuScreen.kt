@@ -48,7 +48,7 @@ fun MainMenuScreen(
                 )
                 MenuIcon(
                     icon = Icons.Default.Psychology,
-                    label = "Gestione IA",
+                    label = "Modello LLM",
                     onClick = onNavigateToLlmManager
                 )
             }

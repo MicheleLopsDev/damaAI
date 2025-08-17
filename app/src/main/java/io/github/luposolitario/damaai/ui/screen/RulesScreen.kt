@@ -17,12 +17,7 @@ fun RulesScreen(onBackPressed: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Regole della Dama Italiana") },
-                navigationIcon = {
-                    IconButton(onClick = onBackPressed) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Indietro")
-                    }
-                }
+                title = { Text("Regole della Dama Italiana") }
             )
         }
     ) { innerPadding ->

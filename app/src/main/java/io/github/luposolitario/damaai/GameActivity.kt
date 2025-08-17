@@ -55,6 +55,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import androidx.core.content.FileProvider
+import io.github.luposolitario.damaai.ui.screen.HelpScreen
 import io.github.luposolitario.damaai.utils.getTrackIdByName
 import java.io.File
 import java.io.FileOutputStream
@@ -132,13 +133,13 @@ fun AppNavigation(settingsViewModel: SettingsViewModel) {
             )
         }
         composable(route = "help_screen") {
-            HelpScreen(navController = navController)
+            HelpScreen()
         }
         composable(route = "credits_screen") {
-            CreditsScreen(navController = navController)
+            CreditsScreen()
         }
         composable(route = "customization_screen") {
-            CustomizationScreen(navController = navController)
+            CustomizationScreen()
         }
     }
 }
@@ -359,7 +360,7 @@ fun GameScreen(
                     gemmaEngine.load(context, modelPath)
                     generateComment(aiOpponent.openingPrompt)
                 } else {
-                    chatMessages = chatMessages + "ERRORE: Modello IA non trovato."
+                    chatMessages = chatMessages + "ERRORE: Modello LLM non trovato."
                 }
             } catch (e: Exception) {
                 Log.e("GemmaIntegration", "Errore caricamento modello Gemma", e)
