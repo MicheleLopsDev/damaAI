@@ -70,13 +70,13 @@ fun OptionsScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Opzioni") },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        navController.popBackStack()
-                    }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Indietro")
-                    }
-                }
+//                navigationIcon = {
+//                    IconButton(onClick = {
+//                        navController.popBackStack()
+//                    }) {
+//                        Icon(Icons.Default.ArrowBack, contentDescription = "Indietro")
+//                    }
+//                }
             )
         }
     ) { paddingValues ->
