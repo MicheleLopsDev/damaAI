@@ -7,13 +7,12 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.viewmodel.compose.viewModel
-import io.github.luposolitario.damaai.ui.screen.MainMenuScreen
+import io.github.luposolitario.damaai.ui.screen.CreditsScreen
 import io.github.luposolitario.damaai.ui.theme.DamaAITheme
-import io.github.luposolitario.damaai.navigation.AppNavigator
 import io.github.luposolitario.damaai.viewmodels.SettingsViewModel
 import io.github.luposolitario.damaai.viewmodels.SettingsViewModelFactory
 
-class MainActivity : ComponentActivity() {
+class CreditsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -24,26 +23,7 @@ class MainActivity : ComponentActivity() {
             val useDarkTheme by settingsViewModel.isDarkModeEnabled.collectAsState(initial = isSystemInDarkTheme())
 
             DamaAITheme(darkTheme = useDarkTheme) {
-                MainMenuScreen(
-                    onNavigateToGameActivity = {
-                        AppNavigator.navigateToGameActivity(this)
-                    },
-                    onNavigateToOptions = {
-                        AppNavigator.navigateToOptionsActivity(this)
-                    },
-                    onNavigateToLlmManager = {
-                        AppNavigator.navigateToLlmManager(this)
-                    },
-                    onNavigateToRules = {
-                        AppNavigator.navigateToRulesActivity(this)
-                    },
-                    onNavigateToHelp = {
-                        AppNavigator.navigateToHelpActivity(this)
-                    },
-                    onNavigateToCredits = {
-                        AppNavigator.navigateToCreditsActivity(this)
-                    }
-                )
+                CreditsScreen(onBackPressed = { finish() })
             }
         }
     }

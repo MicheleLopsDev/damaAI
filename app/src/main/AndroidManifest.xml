@@ -39,7 +39,21 @@
             android:exported="false"
             android:label="Gestione IA"
             android:theme="@style/Theme.DamaAI" />
-
+        <activity
+            android:name=".RulesActivity"
+            android:exported="false"
+            android:label="Regole"
+            android:theme="@style/Theme.DamaAI" />
+        <activity
+            android:name=".HelpActivity"
+            android:exported="false"
+            android:label="Help"
+            android:theme="@style/Theme.DamaAI" />
+        <activity
+            android:name=".CreditsActivity"
+            android:exported="false"
+            android:label="Crediti"
+            android:theme="@style/Theme.DamaAI" />
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"

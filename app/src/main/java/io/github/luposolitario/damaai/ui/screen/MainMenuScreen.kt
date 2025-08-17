@@ -17,7 +17,10 @@ import androidx.compose.ui.unit.dp
 fun MainMenuScreen(
     onNavigateToGameActivity: () -> Unit,
     onNavigateToOptions: () -> Unit,
-    onNavigateToLlmManager: () -> Unit
+    onNavigateToLlmManager: () -> Unit,
+    onNavigateToRules: () -> Unit,
+    onNavigateToHelp: () -> Unit,
+    onNavigateToCredits: () -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -28,10 +31,11 @@ fun MainMenuScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(32.dp),
+                .padding(16.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // --- Riga 1: Gioca e Gestione IA ---
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceAround,
@@ -48,18 +52,44 @@ fun MainMenuScreen(
                     onClick = onNavigateToLlmManager
                 )
             }
-            Spacer(modifier = Modifier.height(32.dp)) // Spazio aggiuntivo
 
-            // --- NUOVA RIGA PER LE IMPOSTAZIONI ---
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // --- Riga 2: Regole e Opzioni ---
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center, // Centriamo l'icona
+                horizontalArrangement = Arrangement.SpaceAround,
                 verticalAlignment = Alignment.Top
             ) {
                 MenuIcon(
+                    icon = Icons.Default.Gavel,
+                    label = "Regole",
+                    onClick = onNavigateToRules
+                )
+                MenuIcon(
                     icon = Icons.Default.Settings,
                     label = "Opzioni",
-                    onClick = onNavigateToOptions // Usa la nuova funzione di navigazione
+                    onClick = onNavigateToOptions
+                )
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // --- Riga 3: Help e Crediti ---
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceAround,
+                verticalAlignment = Alignment.Top
+            ) {
+                MenuIcon(
+                    icon = Icons.Default.HelpOutline,
+                    label = "Help",
+                    onClick = onNavigateToHelp
+                )
+                MenuIcon(
+                    icon = Icons.Default.Info,
+                    label = "Crediti",
+                    onClick = onNavigateToCredits
                 )
             }
         }
@@ -74,11 +104,11 @@ private fun MenuIcon(
     onClick: () -> Unit
 ) {
     Column(
-        modifier = modifier.clickable(onClick = onClick),
+        modifier = modifier.clickable(onClick = onClick).width(120.dp), // Diamo una larghezza fissa per l'allineamento
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Surface(
-            modifier = Modifier.size(120.dp),
+            modifier = Modifier.size(100.dp),
             shape = MaterialTheme.shapes.medium,
             tonalElevation = 4.dp,
             shadowElevation = 8.dp
@@ -87,7 +117,7 @@ private fun MenuIcon(
                 Icon(
                     imageVector = icon,
                     contentDescription = label,
-                    modifier = Modifier.size(64.dp),
+                    modifier = Modifier.size(56.dp),
                     tint = MaterialTheme.colorScheme.primary
                 )
             }
