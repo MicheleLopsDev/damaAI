@@ -50,6 +50,7 @@ import io.github.luposolitario.damaai.game_logic.Colore
 import io.github.luposolitario.damaai.game_logic.Difficolta
 import io.github.luposolitario.damaai.game_logic.Posizione
 import io.github.luposolitario.damaai.media.MusicManager
+import io.github.luposolitario.damaai.media.TtsManager
 import io.github.luposolitario.damaai.screen.*
 import io.github.luposolitario.damaai.ui.screen.HelpScreen
 import io.github.luposolitario.damaai.ui.screen.OptionsScreen
@@ -251,6 +252,10 @@ fun GameScreen(
                         isAiThinking = false
                         if (llmChatMessages.isNotEmpty()) {
                             Log.d("LlmChatLog", "Generation complete. Final message: ${llmChatMessages.last()}")
+                            // ==== AGGIUNTA QUI ====
+                            // Pulisce il nome del bot e fa parlare il TTS con il messaggio completo
+                            val textToSpeak = llmChatMessages.last().substringAfter(":").trim().replace("\"", "")
+                            TtsManager.speak(textToSpeak)
                         }
                     }
                     .collect { partialResponse ->
@@ -371,6 +376,7 @@ fun GameScreen(
         onDispose {
             coroutineScope.launch { gemmaEngine.unload() }
             MusicManager.stop()
+            TtsManager.shutdown()
         }
     }
 
