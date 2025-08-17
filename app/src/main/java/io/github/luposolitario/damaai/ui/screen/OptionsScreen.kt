@@ -11,7 +11,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -27,7 +28,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import io.github.luposolitario.damaai.R
 import io.github.luposolitario.damaai.data.availableOpponents
@@ -36,6 +39,7 @@ import io.github.luposolitario.damaai.game_logic.Difficolta
 import io.github.luposolitario.damaai.media.MusicManager
 import io.github.luposolitario.damaai.utils.getTrackIdByName
 import io.github.luposolitario.damaai.viewmodels.SettingsViewModel
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -142,9 +146,9 @@ fun OptionsScreen(
 
             item {
                 Row(
-                    verticalAlignment = Alignment.Companion.CenterVertically,
+                    verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier.Companion.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
                     Text(text = "Modalità Scura", style = MaterialTheme.typography.titleMedium)
@@ -164,16 +168,54 @@ fun OptionsScreen(
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
 
-                Text("Volume", style = MaterialTheme.typography.bodyLarge)
-                Slider(
-                    value = musicVolume,
-                    onValueChange = { newVolume ->
-                        settingsViewModel.setMusicVolume(newVolume)
-                        MusicManager.setVolume(newVolume)
-                    },
-                    valueRange = 0f..1f
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Volume", style = MaterialTheme.typography.bodyLarge)
+
+                    // --- NUOVO CONTROLLO VOLUME ---
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        val volumePercentage = (musicVolume * 100).roundToInt()
+
+                        // Pulsante Meno
+                        IconButton(onClick = {
+                            val newPercentage = (volumePercentage - 1).coerceIn(0, 100)
+                            val newVolume = newPercentage / 100f
+                            settingsViewModel.setMusicVolume(newVolume)
+                            MusicManager.setVolume(newVolume)
+                        }) {
+                            Icon(Icons.Default.Remove, contentDescription = "Diminuisci volume")
+                        }
+
+                        // Testo Percentuale
+                        Text(
+                            text = "$volumePercentage%",
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold
+                            ),
+                            modifier = Modifier.width(60.dp),
+                            textAlign = TextAlign.Center
+                        )
+
+                        // Pulsante Più
+                        IconButton(onClick = {
+                            val newPercentage = (volumePercentage + 1).coerceIn(0, 100)
+                            val newVolume = newPercentage / 100f
+                            settingsViewModel.setMusicVolume(newVolume)
+                            MusicManager.setVolume(newVolume)
+                        }) {
+                            Icon(Icons.Default.Add, contentDescription = "Aumenta volume")
+                        }
+                    }
+                }
             }
+
 
             // Conditional Dropdown for Classic Music
             if (selectedTeamStyleId == "default") {
