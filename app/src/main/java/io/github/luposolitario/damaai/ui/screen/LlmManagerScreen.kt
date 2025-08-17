@@ -1,5 +1,7 @@
 package io.github.luposolitario.damaai.ui.screen
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -8,6 +10,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,6 +19,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import io.github.luposolitario.damaai.viewmodel.DownloadState
 import io.github.luposolitario.damaai.viewmodel.LlmManagerViewModel
+import kotlinx.coroutines.launch
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,6 +31,18 @@ fun LlmManagerScreen(
     val downloadState by viewModel.downloadState.collectAsState()
     val isModelDownloaded by viewModel.isModelDownloaded.collectAsState()
     val isTokenPresent by viewModel.isTokenPresent.collectAsState()
+    val scope = rememberCoroutineScope()
+
+    // Launcher per selezionare file da SD
+    val filePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let {
+            scope.launch {
+                viewModel.loadModelFromLocal(uri)
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -76,10 +93,18 @@ fun LlmManagerScreen(
                     AnimatedContent(targetState = if (isModelDownloaded) DownloadState.Completed else downloadState, label = "DownloadButtonAnimation") { state ->
                         when (state) {
                             is DownloadState.Idle -> {
-                                Button(onClick = { viewModel.startModelDownload() }) {
-                                    Icon(Icons.Default.Download, contentDescription = "Download")
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Scarica")
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Button(onClick = { viewModel.startModelDownload() }) {
+                                        Icon(Icons.Default.Download, contentDescription = "Download")
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("Scarica")
+                                    }
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Button(onClick = { filePickerLauncher.launch("*/*") }) {  // Seleziona qualsiasi file
+                                        Icon(Icons.Default.Folder, contentDescription = "Carica da SD")
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("Carica da SD")
+                                    }
                                 }
                             }
 
@@ -90,6 +115,10 @@ fun LlmManagerScreen(
                                         "${state.progress}%",
                                         style = MaterialTheme.typography.labelSmall
                                     )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Button(onClick = { viewModel.cancelDownload() }) {
+                                        Text("Annulla")
+                                    }
                                 }
                             }
 

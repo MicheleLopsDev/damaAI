@@ -1,6 +1,7 @@
 package io.github.luposolitario.damaai.viewmodel
 
 import android.app.Application
+import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.work.*
@@ -10,11 +11,14 @@ import io.github.luposolitario.damaai.datastore.ModelSettingsManager
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.io.File
+import java.io.FileOutputStream
+import java.util.UUID
 
 class LlmManagerViewModel(
     application: Application,
 ) : AndroidViewModel(application) {
 
+    private var currentWorkId: UUID? = null  // Per tracciare l'ID del work per cancel
     private val workManager = WorkManager.getInstance(application)
     private val modelSettingsManager = ModelSettingsManager
 
@@ -94,6 +98,8 @@ class LlmManagerViewModel(
             .setInputData(inputData)
             .build()
 
+        currentWorkId = downloadRequest.id  // Salva ID per cancel
+
         workManager.enqueue(downloadRequest)
 
         workManager.getWorkInfoByIdLiveData(downloadRequest.id).observeForever { workInfo ->
@@ -126,6 +132,27 @@ class LlmManagerViewModel(
             }
         }
     }
+
+    fun cancelDownload() {
+        currentWorkId?.let { workManager.cancelWorkById(it) }
+        _downloadState.value = DownloadState.Idle
+    }
+
+    suspend fun loadModelFromLocal(uri: Uri) {
+        val app = getApplication<Application>()
+        val dmDirectory = app.filesDir
+        val modelFile = File(dmDirectory, "gemma-3n-E4B-it-int4.task")
+
+        app.contentResolver.openInputStream(uri)?.use { input ->
+            FileOutputStream(modelFile).use { output ->
+                input.copyTo(output)
+            }
+        }
+
+        modelSettingsManager.updateDmModelFilePath(modelFile.absolutePath, app)
+        _downloadState.value = DownloadState.Completed
+    }
+
 }
 
 

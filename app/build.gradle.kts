@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "io.github.luposolitario.damaai"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "io.github.luposolitario.damaai"
@@ -81,7 +81,7 @@ dependencies {
 }
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:4.31.1"
+        artifact = "com.google.protobuf:protoc:4.32.0"
     }
     generateProtoTasks {
         all().forEach { task ->
