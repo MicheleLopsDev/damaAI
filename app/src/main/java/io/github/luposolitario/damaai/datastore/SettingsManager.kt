@@ -10,7 +10,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-
+import android.util.Log
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
 class SettingsManager(private val context: Context) {
@@ -61,7 +61,9 @@ class SettingsManager(private val context: Context) {
     val difficultyLevelFlow: Flow<String> = context.dataStore.data
         .map { preferences ->
             // Se non c'è un valore salvato, usiamo "FACILE" come default.
-            preferences[DIFFICULTY_LEVEL] ?: "FACILE"
+            val difficulty = preferences[DIFFICULTY_LEVEL] ?: "FACILE"
+            Log.d("SettingsDebug", "DataStore ha letto la difficoltà: $difficulty") // <-- AGGIUNGI QUESTO LOG
+            difficulty
         }
 
     // --- NUOVO: Funzione per salvare la difficoltà ---

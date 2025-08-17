@@ -90,7 +90,7 @@ fun OptionsScreen(
             // Section for Team Style
             item {
                 Text(
-                    text = "Scegli lo stile per le tue pedine:",
+                    text = "Scegli il tuo avversario:",
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
@@ -133,18 +133,18 @@ fun OptionsScreen(
                     )
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
-                        Text(text = style.nationName, style = MaterialTheme.typography.bodyLarge)
                         val opponent = availableOpponents.find { it.name == style.opponentName }
                         val opponentText = if (opponent != null) {
                             "Avversario: ${opponent.name}"
                         } else {
-                            "Modalità Classica"
+                            "Modalità due giocatori"
                         }
-                        Text(
-                            text = opponentText,
-                            style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.Light
-                        )
+                        Text(text = opponentText, style = MaterialTheme.typography.bodyLarge, fontFamily = MaterialTheme.typography.bodyLarge.fontFamily)
+//                        Text(
+//                            text = opponentText,
+//                            style = MaterialTheme.typography.bodySmall,
+//                            fontWeight = FontWeight.Light
+//                        )
                     }
                 }
             }

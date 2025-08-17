@@ -216,7 +216,7 @@ fun GameScreen(
 
     // ---- LEGGIAMO LA DIFFICOLTÀ DAL VIEWMODEL ----
     val selectedDifficulty by settingsViewModel.difficultyLevel.collectAsState()
-
+    Log.d("GameDebug", "Stato di selectedDifficulty aggiornato a: $selectedDifficulty")
 
     val aiOpponent: AiOpponent? = remember(playerTeamStyle.id) {
         availableOpponents.find {
@@ -332,7 +332,9 @@ fun GameScreen(
         }
     }
 
-    LaunchedEffect(playerTeamStyle.id) {
+    LaunchedEffect(playerTeamStyle.id,selectedDifficulty) {
+        Log.d("GameDebug", "LaunchedEffect partito. Difficoltà attuale: $selectedDifficulty")
+
         chatMessages = emptyList()
         winner = null
         finalAiComment = null
@@ -342,6 +344,7 @@ fun GameScreen(
         } catch (e: IllegalArgumentException) {
             Difficolta.FACILE // Valore di fallback
         }
+        Log.d("GameDebug", "Inizializzo nuova partita con difficoltà: $difficoltaAttuale")
         damaEngine.nuovaPartita(difficoltaAttuale)
         // --- FINE FIX ---
         val initialPieces = parseBoardState(damaEngine.getStatoScacchiera())
