@@ -47,7 +47,7 @@ import io.github.luposolitario.damaai.ui.screen.OptionsScreen
 import io.github.luposolitario.damaai.ui.theme.DamaAITheme
 import io.github.luposolitario.damaai.viewmodels.SettingsViewModel
 import io.github.luposolitario.damaai.viewmodels.SettingsViewModelFactory
-import io.github.luposolitario.lonewolfredux.datastore.ModelSettingsManager
+import io.github.luposolitario.damaai.datastore.ModelSettingsManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.launch

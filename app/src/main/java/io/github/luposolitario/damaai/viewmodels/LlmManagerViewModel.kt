@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.work.*
 import io.github.luposolitario.damaai.datastore.SettingsManager
 import io.github.luposolitario.damaai.worker.ModelDownloadWorker
-import io.github.luposolitario.lonewolfredux.datastore.ModelSettingsManager
+import io.github.luposolitario.damaai.datastore.ModelSettingsManager
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.io.File

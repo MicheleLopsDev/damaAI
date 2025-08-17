@@ -1,4 +1,4 @@
-package io.github.luposolitario.lonewolfredux.datastore
+package io.github.luposolitario.damaai.datastore
 
 import android.content.Context
 import androidx.datastore.core.DataStore

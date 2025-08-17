@@ -1,4 +1,4 @@
-package io.github.luposolitario.lonewolfredux.datastore
+package io.github.luposolitario.damaai.datastore
 
 import androidx.datastore.core.CorruptionException
 import androidx.datastore.core.Serializer

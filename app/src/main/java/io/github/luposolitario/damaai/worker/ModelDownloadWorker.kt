@@ -10,7 +10,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
-import io.github.luposolitario.lonewolfredux.datastore.ModelSettingsManager
+import io.github.luposolitario.damaai.datastore.ModelSettingsManager
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
