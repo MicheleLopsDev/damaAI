@@ -32,6 +32,7 @@ import androidx.navigation.NavController
 import io.github.luposolitario.damaai.R
 import io.github.luposolitario.damaai.data.availableOpponents
 import io.github.luposolitario.damaai.data.availableTeamStyles
+import io.github.luposolitario.damaai.game_logic.Difficolta
 import io.github.luposolitario.damaai.media.MusicManager
 import io.github.luposolitario.damaai.utils.getTrackIdByName
 import io.github.luposolitario.damaai.viewmodels.SettingsViewModel
@@ -133,11 +134,6 @@ fun OptionsScreen(
                             "Modalità due giocatori"
                         }
                         Text(text = opponentText, style = MaterialTheme.typography.bodyLarge, fontFamily = MaterialTheme.typography.bodyLarge.fontFamily)
-//                        Text(
-//                            text = opponentText,
-//                            style = MaterialTheme.typography.bodySmall,
-//                            fontWeight = FontWeight.Light
-//                        )
                     }
                 }
             }
@@ -234,25 +230,25 @@ fun OptionsScreen(
                 Column {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth().clickable { settingsViewModel.setDifficultyLevel("FACILE") }
+                        modifier = Modifier.fillMaxWidth().clickable { settingsViewModel.setDifficultyLevel(Difficolta.FACILE.name) }
                     ) {
-                        RadioButton(selected = selectedDifficulty == "FACILE", onClick = { settingsViewModel.setDifficultyLevel("FACILE") })
+                        RadioButton(selected = selectedDifficulty == Difficolta.FACILE.name, onClick = { settingsViewModel.setDifficultyLevel(Difficolta.FACILE.name) })
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("Facile")
                     }
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth().clickable { settingsViewModel.setDifficultyLevel("MEDIO") }
+                        modifier = Modifier.fillMaxWidth().clickable { settingsViewModel.setDifficultyLevel(Difficolta.MEDIO.name) }
                     ) {
-                        RadioButton(selected = selectedDifficulty == "MEDIO", onClick = { settingsViewModel.setDifficultyLevel("MEDIO") })
+                        RadioButton(selected = selectedDifficulty == Difficolta.MEDIO.name, onClick = { settingsViewModel.setDifficultyLevel(Difficolta.MEDIO.name) })
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("Medio")
                     }
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth().clickable { settingsViewModel.setDifficultyLevel("DIFFICILE") }
+                        modifier = Modifier.fillMaxWidth().clickable { settingsViewModel.setDifficultyLevel(Difficolta.DIFFICILE.name) }
                     ) {
-                        RadioButton(selected = selectedDifficulty == "DIFFICILE", onClick = { settingsViewModel.setDifficultyLevel("DIFFICILE") })
+                        RadioButton(selected = selectedDifficulty == Difficolta.DIFFICILE.name, onClick = { settingsViewModel.setDifficultyLevel(Difficolta.DIFFICILE.name) })
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("Difficile")
                     }

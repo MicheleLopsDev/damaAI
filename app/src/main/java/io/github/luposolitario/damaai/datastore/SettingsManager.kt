@@ -11,6 +11,8 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import android.util.Log
+import io.github.luposolitario.damaai.game_logic.Difficolta
+
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
 class SettingsManager(private val context: Context) {
@@ -61,7 +63,7 @@ class SettingsManager(private val context: Context) {
     val difficultyLevelFlow: Flow<String> = context.dataStore.data
         .map { preferences ->
             // Se non c'è un valore salvato, usiamo "FACILE" come default.
-            val difficulty = preferences[DIFFICULTY_LEVEL] ?: "FACILE"
+            val difficulty = preferences[DIFFICULTY_LEVEL] ?: Difficolta.MEDIO.name
             Log.d("SettingsDebug", "DataStore ha letto la difficoltà: $difficulty") // <-- AGGIUNGI QUESTO LOG
             difficulty
         }

@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import io.github.luposolitario.damaai.datastore.SettingsManager
+import io.github.luposolitario.damaai.game_logic.Difficolta
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -50,7 +51,7 @@ class SettingsViewModel(
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = "FACILE" // Valore di partenza
+            initialValue =  Difficolta.MEDIO.name // Valore di partenza
         )
 
     // --- NUOVO: Funzione per salvare la difficoltà ---
