@@ -21,6 +21,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.VolumeOff
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -218,6 +220,8 @@ fun GameScreen(
     val gemmaEngine = remember { GemmaEngine() }
 
     val selectedDifficulty by settingsViewModel.difficultyLevel.collectAsState()
+    // Stato locale per l'icona del muto, inizializzato con lo stato del MusicManager
+    var isMuted by remember { mutableStateOf(MusicManager.isMuted) }
 
     val aiOpponent: AiOpponent? = remember(playerTeamStyle.id) {
         availableOpponents.find {
@@ -385,6 +389,15 @@ fun GameScreen(
             TopAppBar(
                 title = { Text("damaAI") },
                 actions = {
+                    // --- NUOVO PULSANTE MUTE ---
+                    IconButton(onClick = {
+                        isMuted = MusicManager.toggleMute()
+                    }) {
+                        Icon(
+                            imageVector = if (isMuted) Icons.Filled.VolumeOff else Icons.Filled.VolumeUp,
+                            contentDescription = if (isMuted) "Riattiva audio" else "Muto"
+                        )
+                    }
                     IconButton(onClick = {
                         coroutineScope.launch {
                             boardCoordinates?.let { coordinates ->
