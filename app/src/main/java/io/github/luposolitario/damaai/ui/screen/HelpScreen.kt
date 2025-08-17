@@ -17,7 +17,8 @@ fun HelpScreen() {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Guida Completa") }
+                title = { Text("Guida Completa")
+                }
             )
         }
     ) { innerPadding ->
@@ -40,32 +41,42 @@ fun HelpScreen() {
             )
 
             HelpSection(
-                title = "Condividi Partita",
-                content = "Durante una partita, puoi premere l'icona di condivisione per inviare uno screenshot della scacchiera a un amico. Utile per giocare a distanza o per chiedere un consiglio sulla mossa successiva."
-            )
-
-            HelpSection(
                 title = "Livello Difficoltà IA",
                 content = "Questa impostazione influisce sull'abilità dell'IA che calcola le mosse di gioco. Scegli un livello più alto per una sfida maggiore."
             )
 
             Spacer(modifier = Modifier.height(24.dp))
+            Text("Durante la Partita", style = MaterialTheme.typography.headlineSmall)
+            Divider(modifier = Modifier.padding(vertical = 8.dp))
+
+            // --- NUOVA SEZIONE ---
+            HelpSection(
+                title = "Casella di Testo e Mosse",
+                content = "Sotto la scacchiera trovi una casella di testo che ha una doppia funzione:\n\n" +
+                        "1. **Visualizzazione**: Qui compaiono le mosse effettuate e, se hai attivato l'IA Narrativa, anche i commenti e le frasi del tuo avversario.\n\n" +
+                        "2. **Inserimento Mossa (solo due giocatori)**: Quando giochi in modalità 'due giocatori', puoi inserire la tua mossa manualmente in questa casella. Scrivi la mossa nel formato classico (es: **A3 B4**) e premi 'Invia' per muovere la pedina."
+            )
+
+            HelpSection(
+                title = "Condividi Partita",
+                content = "Durante una partita, puoi premere l'icona di condivisione per inviare uno screenshot della scacchiera a un amico. Utile per giocare a distanza o per chiedere un consiglio sulla mossa successiva."
+            )
+
+
+            Spacer(modifier = Modifier.height(24.dp))
             Text("Gestione IA (Funzionalità Avanzate)", style = MaterialTheme.typography.headlineSmall)
             Divider(modifier = Modifier.padding(vertical = 8.dp))
 
-            // --- SEZIONE MODIFICATA ---
             HelpSection(
                 title = "Due tipi di Intelligenza Artificiale",
                 content = "È importante sapere che puoi giocare con i bot **senza scaricare nulla**. L'app usa due IA separate:\n\n" +
-                        "1. **IA per le Mosse**: È il vero motore di gioco. Funziona sempre, è integrata nell'app e si occupa di calcolare le mosse dell'avversario. La sua bravura dipende dalla difficoltà che imposti.\n\n" +
-                        "2. **IA per il Testo (LLM Gemma)**: Questa è una funzionalità **opzionale**. Serve solo a generare frasi e commenti per dare una personalità ai bot. Sebbene possa rendere il gioco più simpatico, **rallenta e appesantisce l'app**. Puoi tranquillamente giocare senza attivarla."
+                        "1. **IA per le Mosse**: È il vero motore di gioco. Funziona sempre, è integrata nell'app e si occupa di calcolare le mosse dell'avversario.\n\n" +
+                        "2. **IA per il Testo (LLM Gemma)**: Questa è una funzionalità **opzionale**. Serve solo a generare frasi per dare una personalità ai bot. Sebbene sia divertente, **rallenta e appesantisce l'app**."
             )
 
-            // --- SEZIONE MODIFICATA ---
             HelpSection(
                 title = "Configurazione ('Gestione Modello IA')",
-                content = "Questa schermata serve **solo se vuoi attivare l'IA per il testo**, quella opzionale.\n\n" +
-                        "Qui puoi scaricare il modello LLM (Gemma) dai server di Hugging Face (inserendo un token) o caricarlo dalla memoria del telefono se lo hai già."
+                content = "Questa schermata serve **solo se vuoi attivare l'IA per il testo**. Qui puoi scaricare il modello LLM (Gemma) o caricarlo dalla memoria del telefono."
             )
             Spacer(modifier = Modifier.height(16.dp))
         }
