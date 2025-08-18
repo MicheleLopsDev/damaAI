@@ -138,6 +138,7 @@ fun OptionsScreen(
                             "Modalità due giocatori"
                         }
                         Text(text = opponentText, style = MaterialTheme.typography.bodyLarge, fontFamily = MaterialTheme.typography.bodyLarge.fontFamily)
+                        Text(text = opponent?.description ?: "", style = MaterialTheme.typography.bodyLarge, fontFamily = MaterialTheme.typography.bodyLarge.fontFamily)
                     }
                 }
             }
