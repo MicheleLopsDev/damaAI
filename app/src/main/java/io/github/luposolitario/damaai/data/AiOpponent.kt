@@ -3,6 +3,15 @@ package io.github.luposolitario.damaai.data
 import androidx.annotation.DrawableRes
 import io.github.luposolitario.damaai.R
 
+
+/**
+ * Enum per rappresentare il sesso del bot in modo sicuro.
+ */
+enum class Gender {
+    MALE,
+    FEMALE
+}
+
 data class AiOpponent(
     val id: String,
     val teamStyleId: String,
@@ -13,7 +22,9 @@ data class AiOpponent(
     val openingPrompt: String,
     val victoryPrompt: String,
     val defeatPrompt: String,
-    val capturePrompt: String
+    val capturePrompt: String,
+    val gender: Gender,
+    @DrawableRes val imageResId: Int
 )
 
 val availableOpponents = listOf(
@@ -28,7 +39,9 @@ val availableOpponents = listOf(
         openingPrompt = "La semplicità è la massima sofisticazione. Studiamo questa partita come se fosse un corpo da sezionare.",
         capturePrompt = "Un elemento superfluo rimosso. L'armonia della composizione ora è più evidente.",
         victoryPrompt = "I dettagli fanno la perfezione, e la perfezione non è un dettaglio. L'opera è compiuta.",
-        defeatPrompt = "Anche il più grande progetto incontra ostacoli. Imparare dalla sconfitta è il principio di ogni nuova invenzione."
+        defeatPrompt = "Anche il più grande progetto incontra ostacoli. Imparare dalla sconfitta è il principio di ogni nuova invenzione.",
+        gender = Gender.MALE,
+        imageResId = R.drawable.portrait_leonardo
     ),
     AiOpponent(
         id = "it_artemisia",
@@ -40,7 +53,9 @@ val availableOpponents = listOf(
         openingPrompt = "La mia vita mi ha insegnato a lottare. Questa scacchiera è solo un'altra tela su cui dimostrare il mio valore. Non avrò pietà.",
         capturePrompt = "Questa non è una mossa, è una dichiarazione. La giustizia trionferà, pezzo dopo pezzo.",
         victoryPrompt = "La mia vittoria era inevitabile, scritta con la stessa forza con cui dipingo le mie eroine. La luce ha sconfitto l'ombra.",
-        defeatPrompt = "Anche Giuditta ha avuto i suoi momenti di dubbio. Ma una sconfitta non definisce un'artista, né una donna."
+        defeatPrompt = "Anche Giuditta ha avuto i suoi momenti di dubbio. Ma una sconfitta non definisce un'artista, né una donna.",
+        gender = Gender.FEMALE,
+        imageResId = R.drawable.portrait_artemisia
     ),
     // === REGNO UNITO ===
     AiOpponent(
@@ -53,7 +68,9 @@ val availableOpponents = listOf(
         openingPrompt = "Orsù, che il palco sia sgombro e la scena pronta! Possa la sorte arridere al più astuto tra noi.",
         capturePrompt = "Ahimè, povero pezzo! La sua ora è giunta. Breve fu la sua parte in questa commedia mortale.",
         victoryPrompt = "Così cala il sipario su questa tenzone. Tutta la scacchiera è un palcoscenico, e la mia vittoria ne è il lieto fine.",
-        defeatPrompt = "Essere o non essere... sconfitto, questo è il problema. La fortuna oltraggiosa ha vibrato i suoi dardi contro di me."
+        defeatPrompt = "Essere o non essere... sconfitto, questo è il problema. La fortuna oltraggiosa ha vibrato i suoi dardi contro di me.",
+        gender = Gender.MALE,
+        imageResId = R.drawable.portrait_shakespeare
     ),
     AiOpponent(
         id = "uk_elisabetta_i",
@@ -65,7 +82,9 @@ val availableOpponents = listOf(
         openingPrompt = "Sono sposata con la vittoria. Non ho altro padrone che la strategia. Mostrami la tua lealtà... o la tua debolezza.",
         capturePrompt = "Un altro potenziale traditore rimosso dalla corte. Il mio regno non tollera la debolezza.",
         victoryPrompt = "Video et taceo. Ho visto, ho taciuto, e ho vinto. Come sempre.",
-        defeatPrompt = "Anche un monarca può subire un rovescio. Ma il mio spirito, come il mio regno, rimane indomito."
+        defeatPrompt = "Anche un monarca può subire un rovescio. Ma il mio spirito, come il mio regno, rimane indomito.",
+        gender = Gender.FEMALE,
+        imageResId = R.drawable.portrait_elisabetta_i
     ),
     // === GERMANIA ===
     AiOpponent(
@@ -78,7 +97,9 @@ val availableOpponents = listOf(
         openingPrompt = "Che audace slancio! Osare è perdere momentaneamente l'equilibrio. Non osare è perdere se stessi. Iniziamo.",
         capturePrompt = "Più luce! E meno pezzi per te sulla scacchiera. Ogni perdita rivela una nuova verità.",
         victoryPrompt = "Il talento si forma nella quiete, il carattere nel torrente della vita... e della battaglia. Ho trionfato.",
-        defeatPrompt = "Conosco solo il desiderio, e il desiderio ha generato questa sconfitta. Un'altra lezione per il mio Faust interiore."
+        defeatPrompt = "Conosco solo il desiderio, e il desiderio ha generato questa sconfitta. Un'altra lezione per il mio Faust interiore.",
+        gender = Gender.MALE,
+        imageResId = R.drawable.portrait_goethe
     ),
     AiOpponent(
         id = "de_dietrich",
@@ -90,7 +111,9 @@ val availableOpponents = listOf(
         openingPrompt = "Iniziamo questo piccolo gioco, tesoro. Ma non aspettarti che io segua le regole di qualcun altro.",
         capturePrompt = "Ti ho tolto un pezzo. Non è personale, è solo che so cosa fare con le mie pedine, a differenza di altri.",
         victoryPrompt = "Vedi? Te l'avevo detto. Sono gli amici che puoi chiamare alle quattro del mattino quelli che contano. Tu, evidentemente, non puoi.",
-        defeatPrompt = "Ho perso. Succede, quando ci si annoia. Una volta che una donna ha perdonato il suo uomo, non deve riscaldare i suoi peccati per colazione."
+        defeatPrompt = "Ho perso. Succede, quando ci si annoia. Una volta che una donna ha perdonato il suo uomo, non deve riscaldare i suoi peccati per colazione.",
+        gender = Gender.FEMALE,
+        imageResId = R.drawable.portrait_dietrich
     ),
     // === STATI UNITI ===
     AiOpponent(
@@ -103,7 +126,9 @@ val availableOpponents = listOf(
         openingPrompt = "Il segreto per andare avanti è iniziare. Anche se, a giudicare dalle premesse, non andremo molto lontano.",
         capturePrompt = "Non discutere mai con un idiota, ti trascina al suo livello e ti batte con l'esperienza. Io, però, ho appena battuto il tuo pezzo.",
         victoryPrompt = "Le notizie della mia sconfitta erano grandemente esagerate. La vittoria, invece, è un fatto concreto.",
-        defeatPrompt = "Il coraggio è la resistenza alla paura, la padronanza della paura, non l'assenza di paura. Oggi hai avuto più coraggio di me. O più fortuna."
+        defeatPrompt = "Il coraggio è la resistenza alla paura, la padronanza della paura, non l'assenza di paura. Oggi hai avuto più coraggio di me. O più fortuna.",
+        gender = Gender.MALE,
+        imageResId = R.drawable.portrait_twain
     ),
     AiOpponent(
         id = "us_franklin",
@@ -115,7 +140,9 @@ val availableOpponents = listOf(
         openingPrompt = "Okay, baby, iniziamo. Mettiamoci un po' di anima in questa partita. E ricorda chi è la Regina.",
         capturePrompt = "R-E-S-P-E-C-T! Ecco cosa succede quando non lo dimostri. Ti ho appena portato a scuola.",
         victoryPrompt = "Sono una donna che sa il fatto suo. La vittoria è mia, come è giusto che sia. Non c'è mai stato alcun dubbio.",
-        defeatPrompt = "A volte si perde, è vero. Ma non dire che sto tornando, perché non me ne sono mai andata."
+        defeatPrompt = "A volte si perde, è vero. Ma non dire che sto tornando, perché non me ne sono mai andata.",
+        gender = Gender.FEMALE,
+        imageResId = R.drawable.portrait_franklin
     ),
     // === FRANCIA ===
     AiOpponent(
@@ -128,7 +155,9 @@ val availableOpponents = listOf(
         openingPrompt = "La vittoria appartiene a chi è più perseverante. Il mio esercito è pronto. Mostrami il valore delle tue truppe.",
         capturePrompt = "Un'altra divisione nemica annientata. L'audacia è tutto. Avanti, verso la prossima conquista!",
         victoryPrompt = "Impossibile non è una parola francese. La Grande Armée ha trionfato ancora una volta. Gloria alla Francia!",
-        defeatPrompt = "Ogni soldato porta nel suo zaino il bastone da maresciallo. Oggi il tuo era più pesante. Ma Waterloo è solo una battuta d'arresto."
+        defeatPrompt = "Ogni soldato porta nel suo zaino il bastone da maresciallo. Oggi il tuo era più pesante. Ma Waterloo è solo una battuta d'arresto.",
+        gender = Gender.MALE,
+        imageResId = R.drawable.portrait_napoleon
     ),
     AiOpponent(
         id = "fr_curie",
@@ -140,7 +169,9 @@ val availableOpponents = listOf(
         openingPrompt = "La partita è un esperimento. Analizziamo le variabili e procediamo con metodo. Che l'osservazione abbia inizio.",
         capturePrompt = "Un elemento instabile è stato rimosso dal sistema. La reazione a catena prosegue come previsto.",
         victoryPrompt = "L'ipotesi è stata confermata. La vittoria non è altro che la logica conclusione di una corretta applicazione del metodo.",
-        defeatPrompt = "Un risultato inatteso. I dati andranno rianalizzati. La vita non è facile, ma non importa. Bisogna perseverare."
+        defeatPrompt = "Un risultato inatteso. I dati andranno rianalizzati. La vita non è facile, ma non importa. Bisogna perseverare.",
+        gender = Gender.FEMALE,
+        imageResId = R.drawable.portrait_curie
     ),
     // === SPAGNA ===
     AiOpponent(
@@ -153,7 +184,9 @@ val availableOpponents = listOf(
         openingPrompt = "Affidiamoci alla sorte, buon signore, che questa è un'impresa degna del più valoroso dei cavalieri. O del più folle.",
         capturePrompt = "Hai combattuto contro un mulino a vento e hai perso un pezzo. La realtà, mio buon amico, è spesso deludente.",
         victoryPrompt = "La penna è la lingua dell'anima. E la mia anima oggi canta vittoria. Forse, dopo tutto, non ero così pazzo.",
-        defeatPrompt = "Fino alla morte, tutto è vita. Anche questa sconfitta è un capitolo della nostra storia. Ci saranno altre avventure."
+        defeatPrompt = "Fino alla morte, tutto è vita. Anche questa sconfitta è un capitolo della nostra storia. Ci saranno altre avventure.",
+        gender = Gender.MALE,
+        imageResId = R.drawable.portrait_cervantes
     ),
     AiOpponent(
         id = "es_isabella_i",
@@ -165,6 +198,8 @@ val availableOpponents = listOf(
         openingPrompt = "In nome di Dio e della Castiglia, che questa partita abbia inizio. Che le tue mosse siano pure e le tue intenzioni chiare.",
         capturePrompt = "Un elemento di disordine è stato epurato. L'unità strategica della nostra nazione deve essere preservata a ogni costo.",
         victoryPrompt = "Tanto monta, monta tanto. La nostra fede nella vittoria ci ha resi forti. Il regno è unificato sotto un'unica bandiera: la mia.",
-        defeatPrompt = "Una prova di fede. La nostra determinazione non vacillerà. Riconquisteremo ciò che ci è stato tolto."
+        defeatPrompt = "Una prova di fede. La nostra determinazione non vacillerà. Riconquisteremo ciò che ci è stato tolto.",
+        gender = Gender.FEMALE,
+        imageResId = R.drawable.portrait_isabella_i
     )
 )
