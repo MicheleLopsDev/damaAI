@@ -1,93 +1,91 @@
 package io.github.luposolitario.damaai.media
 
-import android.content.Context
 import android.speech.tts.TextToSpeech
+import android.speech.tts.Voice
 import android.util.Log
+import io.github.luposolitario.damaai.data.Gender
 import java.util.LinkedList
 import java.util.Locale
 import java.util.Queue
 
 object TtsManager : TextToSpeech.OnInitListener {
-    // --- NUOVO: Tag per filtrare facilmente i log ---
     private const val TAG = "TTS_DEBUG"
+    private data class SpeechRequest(val text: String, val gender: Gender)
+
+    // --- PROVA QUESTE VOCI ---
+    // Ho fatto un'ipotesi. Se non sono corrette,
+    // sostituisci queste stringhe con altri nomi dalla tua lista log.
+    private const val FEMALE_VOICE_NAME = "it-it-x-kda-network"
+    private const val MALE_VOICE_NAME = "it-it-x-itd-network"
+    // -------------------------
 
     private var tts: TextToSpeech? = null
     private var isReady = false
-    private val speechQueue: Queue<String> = LinkedList()
+    private val speechQueue: Queue<SpeechRequest> = LinkedList()
+    private var availableVoices: List<Voice> = emptyList()
 
-    fun initialize(context: Context) {
-        Log.d(TAG, "initialize_CALL: Chiamato metodo initialize.")
-        if (isReady) {
-            Log.d(TAG, "initialize_SKIP: TTS è già pronto e inizializzato.")
-            return
-        }
+    fun initialize(context: android.content.Context) {
         if (tts == null) {
-            Log.d(TAG, "initialize_ACTION: Creo una nuova istanza di TextToSpeech.")
             tts = TextToSpeech(context.applicationContext, this)
-        } else {
-            Log.w(TAG, "initialize_WARN: Esiste un'istanza TTS ma non è pronta. L'inizializzazione potrebbe essere ancora in corso.")
         }
     }
 
     override fun onInit(status: Int) {
-        Log.d(TAG, "onInit_CALLBACK: Ricevuto callback con status code: $status")
-        when (status) {
-            TextToSpeech.SUCCESS -> {
-                val result = tts?.setLanguage(Locale.ITALIAN)
-                if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                    Log.e(TAG, "onInit_ERROR: Lingua Italiana non supportata.")
-                    isReady = false
-                } else {
-                    Log.d(TAG, "onInit_SUCCESS: TTS inizializzato con successo.")
-                    isReady = true
-                    processQueue()
-                }
+        if (status == TextToSpeech.SUCCESS) {
+            availableVoices = tts?.voices?.toList() ?: emptyList()
+            // Log per vedere tutte le voci (lo lascio per riferimento)
+            availableVoices.forEach { voice ->
+                Log.i(TAG, "Voce disponibile: Nome='${voice.name}', Lingua='${voice.locale}'")
             }
-            else -> {
-                Log.e(TAG, "onInit_FAILURE: Inizializzazione TTS fallita. Status code: $status")
-                isReady = false
-            }
+            isReady = true
+            processQueue()
+        } else {
+            Log.e(TAG, "Inizializzazione TTS fallita. Status code: $status")
         }
     }
 
-    fun speak(text: String) {
-        Log.d(TAG, "speak_CALL: Chiamato metodo speak. Stato 'isReady': $isReady")
-        if (text.isEmpty()) {
-            Log.w(TAG, "speak_SKIP: Testo vuoto.")
-            return
+    fun speak(text: String, gender: Gender) {
+        if (isReady) {
+            setVoiceAndSpeak(text, gender)
+        } else {
+            speechQueue.add(SpeechRequest(text, gender))
+        }
+    }
+
+    private fun setVoiceAndSpeak(text: String, gender: Gender) {
+        // --- LOGICA MODIFICATA ---
+        // Ora cerca il nome esatto specificato nelle costanti.
+        val targetVoiceName = if (gender == Gender.FEMALE) FEMALE_VOICE_NAME else MALE_VOICE_NAME
+        Log.d(TAG, "Cerco la voce con nome esatto: '$targetVoiceName'")
+
+        val selectedVoice = availableVoices.firstOrNull { it.name == targetVoiceName }
+
+        if (selectedVoice != null) {
+            tts?.voice = selectedVoice
+            Log.d(TAG, "Voce impostata a: ${selectedVoice.name}")
+        } else {
+            Log.w(TAG, "Voce '$targetVoiceName' non trovata! Uso la predefinita per l'italiano.")
+            // Fallback alla prima voce italiana disponibile se quella specificata non esiste
+            tts?.voice = availableVoices.firstOrNull { it.locale == Locale.ITALIAN }
         }
 
-        if (isReady) {
-            Log.d(TAG, "speak_ACTION: Parlo immediatamente.")
-            tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
-        } else {
-            Log.w(TAG, "speak_QUEUE: TTS non pronto. Aggiungo alla coda. Dimensione attuale coda: ${speechQueue.size}")
-            speechQueue.add(text)
-        }
+        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
     }
 
     private fun processQueue() {
-        Log.d(TAG, "processQueue_CALL: Chiamato. Dimensione coda: ${speechQueue.size}")
-        if (speechQueue.isEmpty()) {
-            Log.d(TAG, "processQueue_SKIP: La coda è vuota.")
-            return
-        }
-        Log.d(TAG, "processQueue_ACTION: Processo ${speechQueue.size} elementi dalla coda.")
         while (speechQueue.isNotEmpty()) {
-            val textToSpeak = speechQueue.poll()
-            if (textToSpeak != null) {
-                tts?.speak(textToSpeak, TextToSpeech.QUEUE_ADD, null, null)
+            val request = speechQueue.poll()
+            if (request != null) {
+                setVoiceAndSpeak(request.text, request.gender)
             }
         }
     }
 
     fun shutdown() {
-        Log.d(TAG, "shutdown_CALL: Chiamato metodo shutdown.")
         tts?.stop()
         tts?.shutdown()
         tts = null
         isReady = false
         speechQueue.clear()
-        Log.d(TAG, "shutdown_SUCCESS: TTS spento e coda pulita.")
     }
 }

@@ -267,7 +267,7 @@ fun GameScreen(
                             // ==== AGGIUNTA QUI ====
                             // Pulisce il nome del bot e fa parlare il TTS con il messaggio completo
                             val textToSpeak = llmChatMessages.last().substringAfter(":").trim().replace("\"", "")
-                            TtsManager.speak(textToSpeak)
+                            TtsManager.speak(textToSpeak,aiOpponent.gender)
                         }
                     }
                     .collect { partialResponse ->
