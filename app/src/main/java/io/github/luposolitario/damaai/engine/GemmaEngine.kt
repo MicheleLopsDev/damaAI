@@ -112,7 +112,8 @@ class GemmaEngine : InferenceEngine {
             session!!.addQueryChunk(fullPrompt)
             session!!.generateResponseAsync { partialResponse, done ->
                 if (isActive) {
-                    partialResponse?.let { trySend(it) }
+                    val cleanedResponse = partialResponse.replace("*", "\"")
+                    cleanedResponse?.let { trySend(it) }
                 }
                 if (done) {
                     close() // Questo triggererà awaitClose

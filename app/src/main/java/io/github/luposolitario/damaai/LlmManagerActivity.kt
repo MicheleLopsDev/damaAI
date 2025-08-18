@@ -10,8 +10,8 @@ import androidx.compose.runtime.getValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.luposolitario.damaai.ui.theme.DamaAITheme
 import io.github.luposolitario.damaai.ui.screen.LlmManagerScreen
-import io.github.luposolitario.damaai.viewmodel.LlmManagerViewModel
-import io.github.luposolitario.damaai.viewmodel.LlmManagerViewModelFactory
+import io.github.luposolitario.damaai.viewmodels.LlmManagerViewModel
+import io.github.luposolitario.damaai.viewmodels.LlmManagerViewModelFactory
 import io.github.luposolitario.damaai.viewmodels.SettingsViewModel
 import io.github.luposolitario.damaai.viewmodels.SettingsViewModelFactory
 

@@ -1,11 +1,10 @@
-package io.github.luposolitario.damaai.viewmodel
+package io.github.luposolitario.damaai.viewmodels
 
 import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.work.*
-import io.github.luposolitario.damaai.datastore.SettingsManager
 import io.github.luposolitario.damaai.worker.ModelDownloadWorker
 import io.github.luposolitario.damaai.datastore.ModelSettingsManager
 import kotlinx.coroutines.flow.*

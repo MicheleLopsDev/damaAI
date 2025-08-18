@@ -1,4 +1,4 @@
-package io.github.luposolitario.damaai.viewmodel
+package io.github.luposolitario.damaai.viewmodels
 
 import android.app.Application
 import androidx.lifecycle.ViewModel
