@@ -69,6 +69,7 @@ import java.io.FileOutputStream
 class GameActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        TtsManager.initialize(this)
         setContent {
             val application = application as DamaAIApplication
             val settingsViewModel: SettingsViewModel = viewModel(
@@ -80,6 +81,12 @@ class GameActivity : ComponentActivity() {
                 AppNavigation(settingsViewModel = settingsViewModel)
             }
         }
+    }
+
+    // --- SOLUZIONE: Spegni il TTS quando l'Activity viene distrutta ---
+    override fun onDestroy() {
+        super.onDestroy()
+        TtsManager.shutdown()
     }
 }
 

@@ -15,6 +15,6 @@ class DamaAIApplication : Application() {
 
         // ==== AGGIUNTA QUI ====
         // Inizializza il Text-to-Speech Manager
-        TtsManager.init(this)
+        TtsManager.initialize(this)
     }
 }
