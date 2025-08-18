@@ -33,6 +33,7 @@ import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -485,6 +486,7 @@ fun GameScreen(
                             boardStyle = boardStyle,
                             selectedSquare = selectedPieceCoords,
                             validMoveSquares = validMoveDestinations,
+                            aiOpponent = aiOpponent,
                             onSquareClick = { row, col ->
                                 val clickedPos = Posizione(row, col)
                                 val pieceAtPos = gameState.pieces.find { it.row == row && it.col == col }
@@ -570,7 +572,7 @@ fun GameScreen(
                 Spacer(Modifier.height(16.dp))
 
                 if (aiOpponent != null) {
-                    AIOpponentHeader(name = aiOpponent.name, isThinking = isAiThinking)
+                    AIOpponentHeader(name = aiOpponent.name,aiOpponent.imageResId, isThinking = isAiThinking)
                 } else {
                     TurnoGiocatoreHeader(turnoCorrente = turnoCorrente)
                 }
@@ -644,7 +646,7 @@ fun TurnoGiocatoreHeader(turnoCorrente: Colore, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun AIOpponentHeader(name: String, isThinking: Boolean, modifier: Modifier = Modifier) {
+fun AIOpponentHeader(name: String,imageResId: Int, isThinking: Boolean, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -652,17 +654,17 @@ fun AIOpponentHeader(name: String, isThinking: Boolean, modifier: Modifier = Mod
         verticalAlignment = Alignment.CenterVertically
     ) {
         Image(
-            imageVector = Icons.Default.AccountCircle,
+            painter = painterResource(id = imageResId),
             contentDescription = "Avatar dell'avversario AI",
             modifier = Modifier
-                .size(40.dp)
+                .size(80.dp)
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         )
         Spacer(modifier = Modifier.width(12.dp))
         Column {
             Text(text = name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            val statusText = if (isThinking) "Sta pensando..." else "Online"
+            val statusText = if (isThinking) "Sta scrivendo..." else "Online"
             val statusColor = if (isThinking) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
             Text(text = statusText, style = MaterialTheme.typography.bodySmall, color = statusColor)
         }

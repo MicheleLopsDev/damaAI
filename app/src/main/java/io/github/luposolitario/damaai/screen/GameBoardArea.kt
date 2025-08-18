@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
+import io.github.luposolitario.damaai.data.AiOpponent
 import io.github.luposolitario.damaai.data.BoardStyle
 import io.github.luposolitario.damaai.data.GameState
 import io.github.luposolitario.damaai.data.PlayerColor
@@ -40,6 +41,7 @@ fun GameBoardArea(
     boardStyle: BoardStyle,
     selectedSquare: Posizione?,
     validMoveSquares: List<Posizione>,
+    aiOpponent: AiOpponent?,
     onSquareClick: (row: Int, col: Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
