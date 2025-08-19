@@ -218,9 +218,10 @@ class MotoreDiGioco() {
             val pezzoAvversario = scacchieraData.pezzoA(posAvversario)
             if (pezzoAvversario != null &&
                 pezzoAvversario.colore != pezzo.colore &&
-                pezzoAvversario.tipo == TipoPezzo.PEDINA &&
                 isCasellaVuota(posArrivo, scacchieraData)) {
-                mosse.add(Mossa(pos, posArrivo, posAvversario))
+                // MODIFICA: Aggiungiamo le info extra alla mossa
+                val isPromozione = (pezzo.colore == Colore.BIANCO && posArrivo.riga == 0) || (pezzo.colore == Colore.NERO && posArrivo.riga == 7)
+                mosse.add(Mossa(pos, posArrivo, posAvversario, pezzoAvversario, isPromozione))
             }
         }
         return mosse
@@ -230,12 +231,45 @@ class MotoreDiGioco() {
         val mosse = mutableListOf<Mossa>()
         for (dirRiga in listOf(-1, 1)) {
             for (dirColonna in listOf(-1, 1)) {
-                val posAvversario = Posizione(pos.riga + dirRiga, pos.colonna + dirColonna)
-                val posArrivo = Posizione(pos.riga + dirRiga * 2, pos.colonna + dirColonna * 2)
+                // ... (logica per trovare l'avversario)
+                var p = Posizione(pos.riga + dirRiga, pos.colonna + dirColonna)
+                var pezzoAvversario: Pezzo? = null
+                var posAvversario: Posizione? = null
 
-                if (isPezzoAvversario(posAvversario, pezzo.colore, scacchieraData) && isCasellaVuota(posArrivo, scacchieraData)) {
-                    mosse.add(Mossa(pos, posArrivo, posAvversario))
+                while (isCasellaValida(p)) {
+                    val pezzoInCasella = scacchieraData.pezzoA(p)
+                    if (pezzoInCasella != null) {
+                        if (pezzoInCasella.colore != pezzo.colore) {
+                            pezzoAvversario = pezzoInCasella
+                            posAvversario = p
+                        }
+                        break
+                    }
+                    p = Posizione(p.riga + dirRiga, p.colonna + dirColonna)
                 }
+
+                if (pezzoAvversario != null && posAvversario != null) {
+                    val posArrivo = Posizione(posAvversario.riga + dirRiga, posAvversario.colonna + dirColonna)
+                    if (isCasellaVuota(posArrivo, scacchieraData)) {
+                        // MODIFICA: Aggiungiamo le info extra
+                        mosse.add(Mossa(pos, posArrivo, posAvversario, pezzoAvversario, isPromozione = false)) // Un damone non viene promosso
+                    }
+                }
+            }
+        }
+        return mosse
+    }
+
+    private fun trovaMosseSempliciPerPedina(pos: Posizione, pezzo: Pezzo): List<Mossa> {
+        val mosse = mutableListOf<Mossa>()
+        val direzione = if (pezzo.colore == Colore.BIANCO) -1 else 1
+
+        for (dirColonna in listOf(-1, 1)) {
+            val posArrivo = Posizione(pos.riga + direzione, pos.colonna + dirColonna)
+            if (isCasellaVuota(posArrivo, this.scacchiera)) {
+                // MODIFICA: Aggiungiamo info promozione
+                val isPromozione = (pezzo.colore == Colore.BIANCO && posArrivo.riga == 0) || (pezzo.colore == Colore.NERO && posArrivo.riga == 7)
+                mosse.add(Mossa(pos, posArrivo, isPromozione = isPromozione))
             }
         }
         return mosse
@@ -251,16 +285,6 @@ class MotoreDiGioco() {
             }
             mosse.addAll(mosseTrovate)
         }
-        return mosse
-    }
-
-    private fun trovaMosseSempliciPerPedina(pos: Posizione, pezzo: Pezzo): List<Mossa> {
-        val mosse = mutableListOf<Mossa>()
-        val direzione = if (pezzo.colore == Colore.BIANCO) -1 else 1
-        val posArrivoSinistra = Posizione(pos.riga + direzione, pos.colonna - 1)
-        if (isCasellaVuota(posArrivoSinistra, this.scacchiera)) mosse.add(Mossa(pos, posArrivoSinistra))
-        val posArrivoDestra = Posizione(pos.riga + direzione, pos.colonna + 1)
-        if (isCasellaVuota(posArrivoDestra, this.scacchiera)) mosse.add(Mossa(pos, posArrivoDestra))
         return mosse
     }
 

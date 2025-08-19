@@ -1,103 +1,101 @@
+// michelelopsdev/damaai/damaAI-4607344960c2303f34c37dc7e118d6e6fbf7c21e/app/src/main/java/io/github/luposolitario/damaai/game_logic/Scacchiera.kt
 package io.github.luposolitario.damaai.game_logic
 
-/**
- * Rappresenta l'intera scacchiera 8x8 e la posizione dei pezzi.
- */
 class Scacchiera {
 
     var zobristHash: Long = 0L
-
-    // Usiamo una Mappa per memorizzare i pezzi. È efficiente perché
-    // associa una Posizione a un Pezzo, solo per le caselle occupate.
     private val mappaPezzi: MutableMap<Posizione, Pezzo> = mutableMapOf()
 
-    // Il blocco 'init' viene eseguito appena creiamo un oggetto Scacchiera.
-    // È perfetto per preparare il gioco.
     init {
         impostaScacchieraIniziale()
     }
 
-    /**
-     * Svuota la scacchiera e imposta una serie di pezzi.
-     * Metodo di supporto creato appositamente per i test.
-     * @param pezzi La mappa delle posizioni e dei pezzi da impostare.
-     */
     fun impostaScacchieraPerTest(pezzi: Map<Posizione, Pezzo>) {
         mappaPezzi.clear()
         mappaPezzi.putAll(pezzi)
     }
 
+    fun contaPezzi(): Int = mappaPezzi.size
 
-    fun contaPezzi(): Int {
-        return mappaPezzi.size
-    }
-
-    /**
-     * Crea una copia esatta di questa scacchiera.
-     * Fondamentale per l'IA per simulare mosse senza alterare lo stato reale del gioco.
-     */
     fun copia(): Scacchiera {
         val nuovaScacchiera = Scacchiera()
-        // Copiamo la mappa dei pezzi pezzo per pezzo.
         nuovaScacchiera.mappaPezzi.clear()
         nuovaScacchiera.mappaPezzi.putAll(this.mappaPezzi)
+        nuovaScacchiera.zobristHash = this.zobristHash
         return nuovaScacchiera
     }
 
-    /**
-     * Restituisce il pezzo presente in una data posizione.
-     * Se la casella è vuota, restituisce null.
-     */
-    fun pezzoA(posizione: Posizione): Pezzo? {
-        return mappaPezzi[posizione]
-    }
+    fun pezzoA(posizione: Posizione): Pezzo? = mappaPezzi[posizione]
 
     /**
-     * Esegue una mossa sulla scacchiera. Sposta un pezzo e gestisce la promozione.
-     * NOTA: Questo metodo non controlla se la mossa è valida! Presume che la
-     * validità sia già stata controllata da un'altra parte del codice (il Game Engine).
+     * Esegue una mossa e aggiorna l'hash in modo incrementale.
+     * Presume che la mossa sia valida.
      */
     fun eseguiMossa(mossa: Mossa) {
-        val pezzo = pezzoA(mossa.partenza) ?: return // Se non c'è un pezzo, non fare nulla
+        val pezzo = pezzoA(mossa.partenza) ?: return
 
-        // 1. Rimuovi il pezzo dalla posizione di partenza
-        mappaPezzi.remove(mossa.partenza)
+        // 1. Rimuovi il pezzo dalla partenza
+        rimuoviPezzoA(mossa.partenza)
 
-        // 2. Controlla se una pedina è arrivata alla fine e deve diventare Damone
-        val pezzoMosso = if (deveEsserePromosso(pezzo, mossa.arrivo)) {
+        // 2. Rimuovi il pezzo catturato, se esiste
+        mossa.pezzoCatturato?.let {
+            rimuoviPezzoA(mossa.posizionePezzoCatturato!!)
+        }
+
+        // 3. Aggiungi il pezzo a destinazione (promosso o meno)
+        val pezzoMosso = if (mossa.isPromozione) {
             Pezzo(pezzo.colore, TipoPezzo.DAMONE)
         } else {
             pezzo
         }
-
-        // 3. Aggiungi il pezzo (originale o promosso) alla posizione di arrivo
-        mappaPezzi[mossa.arrivo] = pezzoMosso
+        aggiungiPezzoA(pezzoMosso, mossa.arrivo)
     }
 
     /**
-     * Rimuove un pezzo da una data posizione (usato per le catture).
+     * NUOVO: Annulla una mossa e ripristina l'hash.
      */
+    fun annullaMossa(mossa: Mossa) {
+        val pezzoMosso = pezzoA(mossa.arrivo) ?: return
+
+        // 1. Rimuovi il pezzo dall'arrivo
+        rimuoviPezzoA(mossa.arrivo)
+
+        // 2. Ripristina il pezzo alla partenza (gestendo il de-promoting)
+        val pezzoOriginale = if (mossa.isPromozione) {
+            Pezzo(pezzoMosso.colore, TipoPezzo.PEDINA)
+        } else {
+            pezzoMosso
+        }
+        aggiungiPezzoA(pezzoOriginale, mossa.partenza)
+
+        // 3. Ripristina il pezzo catturato, se esisteva
+        mossa.pezzoCatturato?.let {
+            aggiungiPezzoA(it, mossa.posizionePezzoCatturato!!)
+        }
+    }
+
     fun rimuoviPezzoA(posizione: Posizione) {
-        mappaPezzi.remove(posizione)
+        val pezzo = mappaPezzi.remove(posizione)
+        if (pezzo != null) {
+            zobristHash = zobristHash xor ZobristHashing.getPieceHash(posizione.riga, posizione.colonna, pezzo.tipo, pezzo.colore)
+        }
     }
 
-    /**
-     * Popola la scacchiera con i pezzi nella loro configurazione iniziale.
-     */
-    private fun impostaScacchieraIniziale() {
-        mappaPezzi.clear() // Pulisci la scacchiera prima di impostarla
+    private fun aggiungiPezzoA(pezzo: Pezzo, posizione: Posizione) {
+        mappaPezzi[posizione] = pezzo
+        zobristHash = zobristHash xor ZobristHashing.getPieceHash(posizione.riga, posizione.colonna, pezzo.tipo, pezzo.colore)
+    }
 
-        // Posiziona i pezzi NERI nelle prime 3 righe (0, 1, 2)
+    // ... il resto della classe (impostaScacchieraIniziale, toString, etc) rimane invariato ...
+    private fun impostaScacchieraIniziale() {
+        mappaPezzi.clear()
         for (riga in 0..2) {
             for (colonna in 0..7) {
-                // Nella dama si gioca solo sulle caselle scure
                 if ((riga + colonna) % 2 != 0) {
                     mappaPezzi[Posizione(riga, colonna)] = Pezzo(Colore.NERO)
                 }
             }
         }
-
-        // Posiziona i pezzi BIANCHI nelle ultime 3 righe (5, 6, 7)
         for (riga in 5..7) {
             for (colonna in 0..7) {
                 if ((riga + colonna) % 2 != 0) {
@@ -106,21 +104,6 @@ class Scacchiera {
             }
         }
     }
-
-    /**
-     * Controlla se una pedina raggiunge il lato opposto per la promozione.
-     */
-    private fun deveEsserePromosso(pezzo: Pezzo, arrivo: Posizione): Boolean {
-        if (pezzo.tipo == TipoPezzo.DAMONE) return false // Un damone non può essere promosso
-
-        return (pezzo.colore == Colore.BIANCO && arrivo.riga == 0) ||
-                (pezzo.colore == Colore.NERO && arrivo.riga == 7)
-    }
-
-    /**
-     * Crea una rappresentazione testuale della scacchiera.
-     * Utile per vedere lo stato del gioco durante lo sviluppo.
-     */
     override fun toString(): String {
         val builder = StringBuilder()
         builder.append("  A B C D E F G H\n")
@@ -139,8 +122,17 @@ class Scacchiera {
         }
         return builder.toString()
     }
-
     fun hasPezzi(colore: Colore): Boolean {
         return mappaPezzi.values.any { it.colore == colore }
+    }
+
+    /**
+     * NUOVO METODO
+     * Controlla se un dato colore ha vinto la partita.
+     * La vittoria si verifica quando l'avversario non ha più pezzi.
+     */
+    fun haVinto(colore: Colore): Boolean {
+        val coloreAvversario = if (colore == Colore.BIANCO) Colore.NERO else Colore.BIANCO
+        return !hasPezzi(coloreAvversario)
     }
 }

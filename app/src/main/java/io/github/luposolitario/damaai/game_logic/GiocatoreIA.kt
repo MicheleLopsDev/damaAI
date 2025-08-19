@@ -1,3 +1,4 @@
+// michelelopsdev/damaai/damaAI-4607344960c2303f34c37dc7e118d6e6fbf7c21e/app/src/main/java/io/github/luposolitario/damaai/game_logic/GiocatoreIA.kt
 package io.github.luposolitario.damaai.game_logic
 
 import android.util.Log
@@ -20,40 +21,99 @@ class GiocatoreIA(
 ) {
 
     private val TAG = "GiocatoreIA_Debug"
-
     private val transpositionTable = TranspositionTable()
-    // La logica di scegliMossa e minimax rimane invariata, userà la nuova `calcolaPunteggio`.
+
+    // --- NUOVE MAPPE POSIZIONALI ---
+    // Bonus per le pedine in base alla loro posizione. Più alto è il valore, migliore è la casella.
+    // I valori sono pensati per il Bianco (che avanza verso la riga 0). Verranno invertiti per il Nero.
+    private val mappaPunteggioPedina = arrayOf(
+        intArrayOf(100, 100, 100, 100, 100, 100, 100, 100), // Riga di promozione
+        intArrayOf( 40,  45,  50,  55,  55,  50,  45,  40),
+        intArrayOf( 30,  35,  40,  45,  45,  40,  35,  30),
+        intArrayOf( 20,  25,  30,  35,  35,  30,  25,  20), // Centro
+        intArrayOf( 15,  20,  25,  30,  30,  25,  20,  15), // Centro
+        intArrayOf( 10,  15,  20,  20,  20,  20,  15,  10),
+        intArrayOf(  5,  10,  10,  10,  10,  10,  10,   5),
+        intArrayOf(  0,   0,   0,   0,   0,   0,   0,   0)  // Base
+    )
+
+    // Per i damoni, il centro è ancora più importante.
+    private val mappaPunteggioDamone = arrayOf(
+        intArrayOf(60, 65, 70, 75, 75, 70, 65, 60),
+        intArrayOf(65, 70, 75, 80, 80, 75, 70, 65),
+        intArrayOf(70, 75, 80, 85, 85, 80, 75, 70), // Cuore della scacchiera
+        intArrayOf(75, 80, 85, 90, 90, 85, 80, 75), // Cuore della scacchiera
+        intArrayOf(75, 80, 85, 90, 90, 85, 80, 75), // Cuore della scacchiera
+        intArrayOf(70, 75, 80, 85, 85, 80, 75, 70), // Cuore della scacchiera
+        intArrayOf(65, 70, 75, 80, 80, 75, 70, 65),
+        intArrayOf(60, 65, 70, 75, 75, 70, 65, 60)
+    )
+
+    // Versione corretta del metodo scegliMossa in GiocatoreIA.kt
+
     fun scegliMossa(): Mossa? {
-        // --- INTEGRAZIONE LIBRO DI APERTURE ---
-        // Controlliamo il libro solo per i primi 7 turni di gioco (14 mezzi-turni)
-        // e solo se non siamo in una situazione di cattura (le catture hanno sempre la priorità).
+        // 1. Creiamo UNA SOLA copia della scacchiera da usare per tutte le simulazioni
+        val scacchieraDiSimulazione = motore.scacchiera.copia()
 
-        // CORREZIONE: Aggiunto "motore." prima di "scacchiera"
-        val numeroPezzi = motore.scacchiera.contaPezzi()
         val mosseDisponibili = motore.mosseValideDisponibili()
+        if (mosseDisponibili.isEmpty()) return null
 
+        // Logica del libro di aperture e difficoltà principiante...
+        val numeroPezzi = motore.scacchiera.contaPezzi()
         if (numeroPezzi > 20 && !mosseDisponibili.any { it.isCattura() }) {
-            // CORREZIONE: Aggiunto "motore." prima di "scacchiera"
             val bookMoveString = OpeningBook.getMove(motore.scacchiera.zobristHash)
             if (bookMoveString != null) {
                 Log.d(TAG, "MOSSA DAL LIBRO: $bookMoveString")
-                // Convertiamo la stringa in un oggetto Mossa
                 return parseMossaFromString(bookMoveString)
             }
         }
-        // --- FINE INTEGRAZIONE ---
+        if (difficolta == Difficolta.PRINCIPIANTE) {
+            return mosseDisponibili.random()
+        }
 
-        // Se non c'è una mossa nel libro, procedi con il calcolo normale.
         transpositionTable.clear()
         Log.d(TAG, "===== Inizio Turno IA / Difficoltà: $difficolta =====")
-        Log.d(TAG, "Mosse disponibili (${mosseDisponibili.size}): ${mosseDisponibili.joinToString()}")
 
-        if (mosseDisponibili.isEmpty()) return null
-        if (difficolta == Difficolta.PRINCIPIANTE) return mosseDisponibili.random()
+        val coloreIA = motore.turnoCorrente
+        var migliorMossaTrovata: Mossa? = mosseDisponibili.firstOrNull()
+        var mosseOrdinate = mosseDisponibili
 
-        return trovaMossaMiglioreConRicercaIterativa(mosseDisponibili)
+        // Ciclo di Approfondimento Iterativo
+        for (depth in 1..difficolta.profonditaMinimax) {
+            var migliorPunteggioInQuestoCiclo = Int.MIN_VALUE
+            val mosseValutateInQuestoCiclo = mutableListOf<Pair<Mossa, Int>>()
+
+            // 2. Usiamo il nuovo sistema anche qui
+            for (mossa in mosseOrdinate) {
+                // --- INIZIO MODIFICA ---
+                // NIENTE PIÙ scacchieraFiglio = simulaMossa(...)
+
+                // Applichiamo la mossa alla nostra scacchiera di simulazione
+                scacchieraDiSimulazione.eseguiMossa(mossa)
+
+                // Chiamiamo minimax sulla scacchiera modificata
+                val punteggio = minimax(scacchieraDiSimulazione, depth - 1, Int.MIN_VALUE, Int.MAX_VALUE, false, coloreIA)
+
+                // Annulliamo la mossa per preparare la scacchiera al ciclo successivo
+                scacchieraDiSimulazione.annullaMossa(mossa)
+                // --- FINE MODIFICA ---
+
+                mosseValutateInQuestoCiclo.add(Pair(mossa, punteggio))
+
+                if (punteggio > migliorPunteggioInQuestoCiclo) {
+                    migliorPunteggioInQuestoCiclo = punteggio
+                    migliorMossaTrovata = mossa
+                }
+            }
+            mosseOrdinate = mosseValutateInQuestoCiclo.sortedByDescending { it.second }.map { it.first }
+            Log.d(TAG, "Miglior mossa a profondità $depth: $migliorMossaTrovata (Punteggio: $migliorPunteggioInQuestoCiclo)")
+        }
+
+        Log.d(TAG, "===== Fine Turno IA / Mossa finale scelta: $migliorMossaTrovata =====")
+        return migliorMossaTrovata ?: mosseDisponibili.randomOrNull()
     }
 
+    // ... Le funzioni parseMossaFromString, minimax, quiescenceSearch, simulaMossa e opposto rimangono INVARIATE ...
     private fun parseMossaFromString(moveString: String): Mossa? {
         val parts = moveString.split(" ")
         if (parts.size != 2) return null
@@ -63,92 +123,9 @@ class GiocatoreIA(
     }
 
     /**
-     * NUOVA STRATEGIA DI RICERCA: ITERATIVE DEEPENING
-     * Esegue ricerche a profondità crescente per ottimizzare la potatura Alfa-Beta.
+     * FUNZIONE MINIMAX COMPLETA E OTTIMIZZATA
+     * Utilizza esegui/annulla mossa per la massima performance.
      */
-    private fun trovaMossaMiglioreConRicercaIterativa(mosse: List<Mossa>): Mossa? {
-        val coloreIA = motore.turnoCorrente
-        var migliorMossaTrovata: Mossa? = mosse.firstOrNull()
-
-        // Cicliamo aumentando la profondità ad ogni passo
-        for (depth in 1..difficolta.profonditaMinimax) {
-            var migliorMossaInQuestoCiclo: Mossa? = null
-            var migliorPunteggio = Int.MIN_VALUE
-
-            for (mossa in mosse) {
-                val scacchieraFiglio = simulaMossa(mossa, motore.scacchiera)
-                val turnoFiglio = coloreIA.opposto()
-                scacchieraFiglio.zobristHash = ZobristHashing.computeHash(scacchieraFiglio, turnoFiglio)
-
-                val punteggio = minimax(scacchieraFiglio, depth - 1, Int.MIN_VALUE, Int.MAX_VALUE, false, coloreIA)
-
-                if (punteggio > migliorPunteggio) {
-                    migliorPunteggio = punteggio
-                    migliorMossaInQuestoCiclo = mossa
-                }
-            }
-            // La mossa migliore trovata a questa profondità diventa la candidata attuale
-            migliorMossaTrovata = migliorMossaInQuestoCiclo
-            Log.d(TAG, "Miglior mossa a profondità $depth: $migliorMossaTrovata (Punteggio: $migliorPunteggio)")
-        }
-
-        Log.d(TAG, "===== Fine Turno IA / Mossa finale scelta: $migliorMossaTrovata =====")
-        return migliorMossaTrovata ?: mosse.randomOrNull()
-    }
-
-    // In GiocatoreIA.kt
-    /**
-     * NUOVA VERSIONE OTTIMIZZATA
-     * Ora include l'ordinamento delle mosse per rendere la ricerca Alfa-Beta più veloce.
-     */
-    private fun trovaMossaMiglioreConMinimax(mosse: List<Mossa>): Mossa? {
-        val coloreIA = motore.turnoCorrente
-        var migliorMossa: Mossa? = mosse.firstOrNull()
-        var migliorPunteggio = Int.MIN_VALUE
-
-        // --- INIZIO OTTIMIZZAZIONE: ORDINAMENTO MOSSE ---
-        // 1. Eseguiamo una ricerca veloce e superficiale (profondità 2) per "intuire" le mosse migliori.
-        val mosseConPunteggioPreliminare = mosse.map { mossa ->
-            val punteggioPreliminare = minimax(
-                simulaMossa(mossa, motore.scacchiera), 2, Int.MIN_VALUE, Int.MAX_VALUE, false, coloreIA
-            )
-            Pair(mossa, punteggioPreliminare)
-        }
-
-        // 2. Ordiniamo le mosse in base a questa prima valutazione, dalla migliore alla peggiore.
-        val mosseOrdinate = mosseConPunteggioPreliminare.sortedByDescending { it.second }.map { it.first }
-        Log.d(TAG, "Mosse ordinate per priorità: ${mosseOrdinate.joinToString()}")
-        // --- FINE OTTIMIZZAZIONE ---
-
-        Log.d(TAG, "Inizio calcolo Minimax PROFONDO per ${mosseOrdinate.size} mosse.")
-
-        // 3. Eseguiamo la ricerca profonda sulla lista ordinata.
-        for (mossa in mosseOrdinate) {
-            val scacchieraSimulata = simulaMossa(mossa, motore.scacchiera)
-            val punteggio = minimax(
-                scacchiera = scacchieraSimulata,
-                profondita = difficolta.profonditaMinimax,
-                alpha = Int.MIN_VALUE,
-                beta = Int.MAX_VALUE,
-                isMaximizing = false,
-                coloreIA = coloreIA
-            )
-
-            Log.i(TAG, "Mossa valutata (profonda): $mossa -> Punteggio: $punteggio")
-
-            if (punteggio > migliorPunteggio) {
-                migliorPunteggio = punteggio
-                migliorMossa = mossa
-                Log.d(TAG, "!!! Nuova mossa migliore trovata: $migliorMossa (Punteggio: $migliorPunteggio)")
-            }
-        }
-
-        Log.d(TAG, "===== Fine Turno IA =====")
-        Log.d(TAG, "Mossa finale scelta: $migliorMossa")
-
-        return migliorMossa ?: mosse.randomOrNull()
-    }
-
     private fun minimax(
         scacchiera: Scacchiera,
         profondita: Int,
@@ -172,9 +149,16 @@ class GiocatoreIA(
             this.turnoCorrente = if (isMaximizing) coloreIA else coloreIA.opposto()
         }
 
+        // Cambia il turno per il calcolo dell'hash
+        scacchiera.zobristHash = scacchiera.zobristHash xor ZobristHashing.blackTurnHash
+
         val mossePossibili = motoreSimulato.mosseValideDisponibili()
+
+        // Ripristina il turno nell'hash
+        scacchiera.zobristHash = scacchiera.zobristHash xor ZobristHashing.blackTurnHash
+
         if (mossePossibili.isEmpty()) {
-            return if (isMaximizing) -10000 else 10000
+            return if (scacchiera.haVinto(coloreIA)) 100000 else -100000
         }
 
         var currentAlpha = alpha
@@ -184,28 +168,24 @@ class GiocatoreIA(
         if (isMaximizing) {
             var migliorPunteggio = Int.MIN_VALUE
             for (mossa in mossePossibili) {
-                val scacchieraFiglio = simulaMossa(mossa, scacchiera)
-                // --- CORREZIONE CHIAVE ---
-                val turnoFiglio = coloreIA.opposto()
-                scacchieraFiglio.zobristHash = ZobristHashing.computeHash(scacchieraFiglio, turnoFiglio)
+                scacchiera.eseguiMossa(mossa)
+                val punteggio = minimax(scacchiera, profondita - 1, currentAlpha, currentBeta, false, coloreIA)
+                scacchiera.annullaMossa(mossa)
 
-                val punteggio = minimax(scacchieraFiglio, profondita - 1, currentAlpha, currentBeta, false, coloreIA)
-                migliorPunteggio = maxOf(migliorPunteggio, punteggio)
-                currentAlpha = maxOf(currentAlpha, migliorPunteggio)
+                migliorPunteggio = max(migliorPunteggio, punteggio)
+                currentAlpha = max(currentAlpha, migliorPunteggio)
                 if (currentBeta <= currentAlpha) break
             }
             finalScore = migliorPunteggio
-        } else {
+        } else { // Minimizing
             var peggiorPunteggio = Int.MAX_VALUE
             for (mossa in mossePossibili) {
-                val scacchieraFiglio = simulaMossa(mossa, scacchiera)
-                // --- CORREZIONE CHIAVE ---
-                val turnoFiglio = coloreIA
-                scacchieraFiglio.zobristHash = ZobristHashing.computeHash(scacchieraFiglio, turnoFiglio)
+                scacchiera.eseguiMossa(mossa)
+                val punteggio = minimax(scacchiera, profondita - 1, currentAlpha, currentBeta, true, coloreIA)
+                scacchiera.annullaMossa(mossa)
 
-                val punteggio = minimax(scacchieraFiglio, profondita - 1, currentAlpha, currentBeta, true, coloreIA)
-                peggiorPunteggio = minOf(peggiorPunteggio, punteggio)
-                currentBeta = minOf(currentBeta, peggiorPunteggio)
+                peggiorPunteggio = min(peggiorPunteggio, punteggio)
+                currentBeta = min(currentBeta, peggiorPunteggio)
                 if (currentBeta <= currentAlpha) break
             }
             finalScore = peggiorPunteggio
@@ -216,8 +196,8 @@ class GiocatoreIA(
     }
 
     /**
-     * NUOVA FUNZIONE: RICERCA DELLA QUIESCENZA
-     * Estende la ricerca per le sole mosse di cattura per evitare l'effetto orizzonte.
+     * FUNZIONE QUIESCENCESEARCH COMPLETA E OTTIMIZZATA
+     * Estende la ricerca per le sole mosse di cattura.
      */
     private fun quiescenceSearch(
         scacchiera: Scacchiera,
@@ -229,7 +209,6 @@ class GiocatoreIA(
         var currentAlpha = alpha
         var currentBeta = beta
 
-        // La valutazione della posizione "tranquilla" attuale è il nostro punto di partenza.
         val standingPat = calcolaPunteggio(scacchiera, coloreIA)
 
         if (isMaximizing) {
@@ -246,30 +225,28 @@ class GiocatoreIA(
             this.turnoCorrente = if (isMaximizing) coloreIA else coloreIA.opposto()
         }
 
-        // Consideriamo SOLO le mosse di cattura
+        scacchiera.zobristHash = scacchiera.zobristHash xor ZobristHashing.blackTurnHash
         val mosseCattura = motoreSimulato.mosseValideDisponibili().filter { it.isCattura() }
+        scacchiera.zobristHash = scacchiera.zobristHash xor ZobristHashing.blackTurnHash
 
-        // Se non ci sono catture, la posizione è tranquilla, restituiamo la valutazione.
         if (mosseCattura.isEmpty()) {
             return standingPat
         }
 
         if (isMaximizing) {
             for (mossa in mosseCattura) {
-                val scacchieraFiglio = simulaMossa(mossa, scacchiera)
-                val turnoFiglio = coloreIA.opposto()
-                scacchieraFiglio.zobristHash = ZobristHashing.computeHash(scacchieraFiglio, turnoFiglio)
-                val punteggio = quiescenceSearch(scacchieraFiglio, currentAlpha, currentBeta, false, coloreIA)
+                scacchiera.eseguiMossa(mossa)
+                val punteggio = quiescenceSearch(scacchiera, currentAlpha, currentBeta, false, coloreIA)
+                scacchiera.annullaMossa(mossa)
                 currentAlpha = max(currentAlpha, punteggio)
                 if (currentBeta <= currentAlpha) break
             }
             return currentAlpha
         } else {
             for (mossa in mosseCattura) {
-                val scacchieraFiglio = simulaMossa(mossa, scacchiera)
-                val turnoFiglio = coloreIA
-                scacchieraFiglio.zobristHash = ZobristHashing.computeHash(scacchieraFiglio, turnoFiglio)
-                val punteggio = quiescenceSearch(scacchieraFiglio, currentAlpha, currentBeta, true, coloreIA)
+                scacchiera.eseguiMossa(mossa)
+                val punteggio = quiescenceSearch(scacchiera, currentAlpha, currentBeta, true, coloreIA)
+                scacchiera.annullaMossa(mossa)
                 currentBeta = min(currentBeta, punteggio)
                 if (currentBeta <= currentAlpha) break
             }
@@ -277,92 +254,84 @@ class GiocatoreIA(
         }
     }
 
-    private fun simulaMossa(mossa: Mossa, scacchieraOriginale: Scacchiera): Scacchiera {
-        val scacchieraSimulata = scacchieraOriginale.copia()
-        mossa.posizionePezzoCatturato?.let {
-            scacchieraSimulata.rimuoviPezzoA(it)
-        }
-        scacchieraSimulata.eseguiMossa(mossa)
-        return scacchieraSimulata
-    }
-
 
     private fun Colore.opposto() = if (this == Colore.BIANCO) Colore.NERO else Colore.BIANCO
 
     /**
-     * FUNZIONE DI VALUTAZIONE "GRANDMASTER"
-     * Include una comprensione più profonda della strategia della Dama.
+     * FUNZIONE DI VALUTAZIONE "GRANDMASTER" - VERSIONE 2.0
+     * Calcola il punteggio totale per l'IA, considerando la differenza con l'avversario.
      */
     private fun calcolaPunteggio(scacchiera: Scacchiera, coloreIA: Colore): Int {
         val coloreAvversario = coloreIA.opposto()
-        val numeroPezziTotali = scacchiera.contaPezzi()
 
-        if (!scacchiera.hasPezzi(coloreAvversario)) return 100000 // Vittoria
-        if (!scacchiera.hasPezzi(coloreIA)) return -100000      // Sconfitta
+        if (!scacchiera.hasPezzi(coloreAvversario)) return 100000
+        if (!scacchiera.hasPezzi(coloreIA)) return -100000
 
-        val punteggioIA = calcolaPunteggioPerColore(scacchiera, coloreIA, numeroPezziTotali)
-        val punteggioAvversario = calcolaPunteggioPerColore(scacchiera, coloreAvversario, numeroPezziTotali)
+        val punteggioIA = calcolaPunteggioPerColore(scacchiera, coloreIA)
+        val punteggioAvversario = calcolaPunteggioPerColore(scacchiera, coloreAvversario)
 
-        // Aggiungiamo un piccolo bonus per il giocatore che ha il turno, che è importante nei finali tesi
-        val bonusTurno = if (motore.turnoCorrente == coloreIA) 5 else -5
+        val bonusTurno = if (motore.turnoCorrente == coloreIA) 10 else 0
 
         return (punteggioIA - punteggioAvversario) + bonusTurno
     }
 
-
-    private fun calcolaPunteggioPerColore(scacchiera: Scacchiera, colore: Colore, pezziTotali: Int): Int {
+    /**
+     * VERSIONE RIVISTA E POTENZIATA
+     * Calcola il punteggio per un singolo colore, includendo materiale, posizione e struttura.
+     */
+    private fun calcolaPunteggioPerColore(scacchiera: Scacchiera, colore: Colore): Int {
         // Pesi base
         val valorePedina = 200
-        val valoreDamoneBase = 500
+        val valoreDamone = 500
 
         var punteggioMateriale = 0
         var punteggioPosizionale = 0
-
-        // --- NUOVA LOGICA DI FASE DI GIOCO ---
-        // Determiniamo se siamo in apertura, mediogioco o finale
-        val isEndgame = pezziTotali <= 10
-        val isMidgame = pezziTotali <= 18
+        var punteggioStrutturale = 0
 
         for (riga in 0..7) {
             for (colonna in 0..7) {
                 val pezzo = scacchiera.pezzoA(Posizione(riga, colonna))
                 if (pezzo != null && pezzo.colore == colore) {
+
+                    val rigaPerMappa = if (colore == Colore.BIANCO) riga else 7 - riga
+
                     if (pezzo.tipo == TipoPezzo.DAMONE) {
-                        // Nel finale, il valore di una dama aumenta drasticamente
-                        val valoreDamone = if (isEndgame) valoreDamoneBase + 200 else valoreDamoneBase
                         punteggioMateriale += valoreDamone
+                        punteggioPosizionale += mappaPunteggioDamone[rigaPerMappa][colonna]
                     } else { // PEDINA
                         punteggioMateriale += valorePedina
+                        punteggioPosizionale += mappaPunteggioPedina[rigaPerMappa][colonna]
 
-                        // La spinta per la promozione diventa cruciale nel finale
-                        val bonusAvanzamento = if (colore == Colore.BIANCO) (7 - riga) else riga
-                        val moltiplicatoreAvanzamento = if (isEndgame) 20 else 5 // Pesa molto di più a fine partita
-                        punteggioPosizionale += bonusAvanzamento * moltiplicatoreAvanzamento
+                        // --- Analisi Strutturale ---
 
-                        // La difesa della base è importante soprattutto in apertura/mediogioco
-                        if (!isEndgame) {
-                            if ((colore == Colore.BIANCO && riga == 7) || (colore == Colore.NERO && riga == 0)) {
-                                punteggioPosizionale += 25
-                            }
+                        // 1. Pedina arretrata (sulla base): bonus difensivo
+                        if ((colore == Colore.BIANCO && riga == 7) || (colore == Colore.NERO && riga == 0)) {
+                            punteggioStrutturale += 15 // Bonus per la "base line"
                         }
-                    }
 
-                    // Il controllo del centro è più importante in mediogioco
-                    if (isMidgame && !isEndgame) {
-                        if (riga in 3..4 && colonna in 2..5) {
-                            punteggioPosizionale += 15
+                        // 2. Pedina isolata: penalità
+                        val haSupportoSinistro = scacchiera.pezzoA(Posizione(riga, colonna - 1))?.colore == colore
+                        val haSupportoDestro = scacchiera.pezzoA(Posizione(riga, colonna + 1))?.colore == colore
+                        if (!haSupportoSinistro && !haSupportoDestro) {
+                            punteggioStrutturale -= 10 // Penalità per pedina isolata
+                        }
+
+                        // 3. Coppia di pedine: bonus
+                        if (haSupportoDestro) { // Contiamo solo a destra per non contare due volte
+                            punteggioStrutturale += 8 // Bonus per pedine affiancate
                         }
                     }
                 }
             }
         }
 
-        // Il bonus di mobilità è sempre importante
-        val motoreSimulato = MotoreDiGioco()
-        motoreSimulato.scacchiera = scacchiera
-        motoreSimulato.turnoCorrente = colore
-        punteggioPosizionale += motoreSimulato.mosseValideDisponibili().size * 2
+        // Bonus di mobilità (numero di mosse disponibili)
+        val motoreSimulato = MotoreDiGioco().apply {
+            this.scacchiera = scacchiera
+            this.turnoCorrente = colore
+        }
+        val bonusMobilita = motoreSimulato.mosseValideDisponibili().size * 2
 
-        return punteggioMateriale + punteggioPosizionale
+        return punteggioMateriale + punteggioPosizionale + punteggioStrutturale + bonusMobilita
     }
 }

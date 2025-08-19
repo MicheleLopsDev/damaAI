@@ -15,7 +15,7 @@ object ZobristHashing {
     private val TAG = "GiocatoreIA_Debug"
 
     // Un numero casuale per indicare di chi è il turno (Nero)
-    private val blackTurnHash: Long
+    val blackTurnHash: Long
 
     init {
         val random = Random(123456789L) // Usiamo un seme fisso per la riproducibilità
@@ -55,7 +55,7 @@ object ZobristHashing {
         return hash
     }
 
-    private fun getPieceHash(riga: Int, colonna: Int, tipo: TipoPezzo, colore: Colore): Long {
+    fun getPieceHash(riga: Int, colonna: Int, tipo: TipoPezzo, colore: Colore): Long {
         return zobristTable[riga][colonna][tipo.ordinal][colore.ordinal]
     }
 }
