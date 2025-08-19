@@ -1,127 +1,140 @@
-package io.github.luposolitario.damaai.game_logic
 // File: GiocatoreIA.kt
+package io.github.luposolitario.damaai.game_logic
 
-enum class Difficolta {
-    FACILE,
-    MEDIO,
-    DIFFICILE
+enum class Difficolta(val profonditaMinimax: Int) {
+    PRINCIPIANTE(0),
+    NOVIZIO(1),
+    INTERMEDIO(3),
+    AVANZATO(5),
+    ESPERTO(7)
 }
 
 class GiocatoreIA(
     private val difficolta: Difficolta,
     private val motore: MotoreDiGioco
 ) {
-    // Definiamo quanto in profondità l'IA difficile deve "pensare".
-    // Un valore più alto è più forte ma richiede più calcoli. 3 o 4 è un buon inizio.
-    private val PROFONDITA_MINIMAX = 3
 
     fun scegliMossa(): Mossa? {
         val mosseDisponibili = motore.mosseValideDisponibili()
         if (mosseDisponibili.isEmpty()) return null
 
-        val coloreIA = motore.turnoCorrente
-
-        return when (difficolta) {
-            Difficolta.FACILE -> mosseDisponibili.random()
-
-            Difficolta.MEDIO -> {
-                mosseDisponibili.maxByOrNull { mossa ->
-                    simulaEMisuraPunteggio(mossa, coloreIA)
-                }
-            }
-
-            Difficolta.DIFFICILE -> {
-                // LOGICA LIVELLO DIFFICILE: Scegli la mossa con il miglior punteggio futuro.
-                var migliorMossa: Mossa? = null
-                var migliorPunteggio = Int.MIN_VALUE
-
-                for (mossa in mosseDisponibili) {
-                    val scacchieraSimulata = simulaMossa(mossa)
-                    val punteggio = minimax(scacchieraSimulata, PROFONDITA_MINIMAX, false, coloreIA)
-
-                    if (punteggio > migliorPunteggio) {
-                        migliorPunteggio = punteggio
-                        migliorMossa = mossa
-                    }
-                }
-                migliorMossa
-            }
+        if (difficolta == Difficolta.PRINCIPIANTE) {
+            return mosseDisponibili.random()
         }
+
+        return trovaMossaMiglioreConMinimax(mosseDisponibili)
     }
 
-    private fun minimax(scacchiera: Scacchiera, profondita: Int, isMaximizing: Boolean, coloreIA: Colore): Int {
-        // Caso base: se abbiamo raggiunto la profondità massima o la partita è finita,
-        // restituiamo il punteggio statico della scacchiera.
-        if (profondita == 0 /* Aggiungeremo qui il controllo di fine partita */) {
+    private fun trovaMossaMiglioreConMinimax(mosse: List<Mossa>): Mossa? {
+        val coloreIA = motore.turnoCorrente
+        var migliorMossa: Mossa? = mosse.firstOrNull()
+        var migliorPunteggio = Int.MIN_VALUE
+
+        for (mossa in mosse) {
+            val scacchieraSimulata = simulaMossa(mossa, motore.scacchiera)
+            val punteggio = minimax(
+                scacchiera = scacchieraSimulata,
+                profondita = difficolta.profonditaMinimax,
+                alpha = Int.MIN_VALUE,
+                beta = Int.MAX_VALUE,
+                isMaximizing = false,
+                coloreIA = coloreIA
+            )
+
+            if (punteggio > migliorPunteggio) {
+                migliorPunteggio = punteggio
+                migliorMossa = mossa
+            }
+        }
+        return migliorMossa
+    }
+
+    private fun minimax(
+        scacchiera: Scacchiera,
+        profondita: Int,
+        alpha: Int,
+        beta: Int,
+        isMaximizing: Boolean,
+        coloreIA: Colore
+    ): Int {
+        if (profondita == 0) {
             return calcolaPunteggio(scacchiera, coloreIA)
         }
 
-        // Creiamo un motore temporaneo per trovare le mosse valide nello stato simulato.
-        val motoreSimulato = MotoreDiGioco()
-        motoreSimulato.scacchiera = scacchiera
-        motoreSimulato.turnoCorrente = if(isMaximizing) coloreIA else (if (coloreIA == Colore.BIANCO) Colore.NERO else Colore.BIANCO)
+        val motoreSimulato = MotoreDiGioco().apply {
+            this.scacchiera = scacchiera
+            this.turnoCorrente = if (isMaximizing) coloreIA else coloreIA.opposto()
+        }
 
         val mossePossibili = motoreSimulato.mosseValideDisponibili()
-        if(mossePossibili.isEmpty()){
+        if (mossePossibili.isEmpty()) {
             return calcolaPunteggio(scacchiera, coloreIA)
         }
 
-        if (isMaximizing) { // Turno dell'IA (Max)
+        var currentAlpha = alpha
+        var currentBeta = beta
+
+        if (isMaximizing) {
             var migliorPunteggio = Int.MIN_VALUE
             for (mossa in mossePossibili) {
-                val scacchieraFiglio = motoreSimulato.simulaMossa(mossa)
-                val punteggio = minimax(scacchieraFiglio, profondita - 1, false, coloreIA)
+                val scacchieraFiglio = simulaMossa(mossa, scacchiera)
+                val punteggio = minimax(scacchieraFiglio, profondita - 1, currentAlpha, currentBeta, false, coloreIA)
                 migliorPunteggio = maxOf(migliorPunteggio, punteggio)
+                currentAlpha = maxOf(currentAlpha, migliorPunteggio)
+                if (currentBeta <= currentAlpha) break
             }
             return migliorPunteggio
-        } else { // Turno dell'avversario (Min)
+        } else {
             var peggiorPunteggio = Int.MAX_VALUE
             for (mossa in mossePossibili) {
-                val scacchieraFiglio = motoreSimulato.simulaMossa(mossa)
-                val punteggio = minimax(scacchieraFiglio, profondita - 1, true, coloreIA)
+                val scacchieraFiglio = simulaMossa(mossa, scacchiera)
+                val punteggio = minimax(scacchieraFiglio, profondita - 1, currentAlpha, currentBeta, true, coloreIA)
                 peggiorPunteggio = minOf(peggiorPunteggio, punteggio)
+                currentBeta = minOf(currentBeta, peggiorPunteggio)
+                if (currentBeta <= currentAlpha) break
             }
             return peggiorPunteggio
         }
     }
 
-    private fun simulaMossa(mossa: Mossa, scacchieraOriginale: Scacchiera = motore.scacchiera): Scacchiera {
+    private fun simulaMossa(mossa: Mossa, scacchieraOriginale: Scacchiera): Scacchiera {
         val scacchieraSimulata = scacchieraOriginale.copia()
-        mossa.posizionePezzoCatturato?.let { scacchieraSimulata.rimuoviPezzoA(it) }
+        mossa.posizionePezzoCatturato?.let {
+            scacchieraSimulata.rimuoviPezzoA(it)
+        }
         scacchieraSimulata.eseguiMossa(mossa)
         return scacchieraSimulata
     }
 
-    // Per il livello MEDIO
-    private fun simulaEMisuraPunteggio(mossa: Mossa, coloreIA: Colore): Int {
-        val scacchieraSimulata = simulaMossa(mossa)
-        return calcolaPunteggio(scacchieraSimulata, coloreIA)
-    }
-
     private fun calcolaPunteggio(scacchiera: Scacchiera, coloreIA: Colore): Int {
         var punteggio = 0
-        // ... (il resto della funzione è invariato)
-        val valorePedina = 1
-        val valoreDamone = 3
+        val valorePedina = 10
+        val valoreDamone = 30
 
         for (riga in 0..7) {
             for (colonna in 0..7) {
                 val pezzo = scacchiera.pezzoA(Posizione(riga, colonna))
                 if (pezzo != null) {
-                    val valore = if (pezzo.tipo == TipoPezzo.DAMONE) valoreDamone else valorePedina
-                    if (pezzo.colore == coloreIA) punteggio += valore
-                    else punteggio -= valore
+                    val valoreBase = if (pezzo.tipo == TipoPezzo.DAMONE) valoreDamone else valorePedina
+                    var bonusPosizionale = 0
+                    if (pezzo.tipo == TipoPezzo.PEDINA) {
+                        if (pezzo.colore == Colore.BIANCO) {
+                            bonusPosizionale = (7 - riga)
+                        } else {
+                            bonusPosizionale = riga
+                        }
+                    }
+                    val valoreTotale = valoreBase + bonusPosizionale
+                    if (pezzo.colore == coloreIA) {
+                        punteggio += valoreTotale
+                    } else {
+                        punteggio -= valoreTotale
+                    }
                 }
             }
         }
         return punteggio
     }
 
-    // Funzione di supporto per minimax
-    private fun MotoreDiGioco.simulaMossa(mossa: Mossa): Scacchiera {
-        val scacchieraCopiata = this.scacchiera.copia()
-        mossa.posizionePezzoCatturato?.let { scacchieraCopiata.rimuoviPezzoA(it) }
-        scacchieraCopiata.eseguiMossa(mossa)
-        return scacchieraCopiata
-    }
+    private fun Colore.opposto() = if (this == Colore.BIANCO) Colore.NERO else Colore.BIANCO
 }

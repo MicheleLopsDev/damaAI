@@ -273,27 +273,43 @@ fun OptionsScreen(
                 Column {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth().clickable { settingsViewModel.setDifficultyLevel(Difficolta.FACILE.name) }
+                        modifier = Modifier.fillMaxWidth().clickable { settingsViewModel.setDifficultyLevel(Difficolta.PRINCIPIANTE.name) }
                     ) {
-                        RadioButton(selected = selectedDifficulty == Difficolta.FACILE.name, onClick = { settingsViewModel.setDifficultyLevel(Difficolta.FACILE.name) })
+                        RadioButton(selected = selectedDifficulty == Difficolta.PRINCIPIANTE.name, onClick = { settingsViewModel.setDifficultyLevel(Difficolta.PRINCIPIANTE.name) })
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Facile")
+                        Text("Principiante")
                     }
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth().clickable { settingsViewModel.setDifficultyLevel(Difficolta.MEDIO.name) }
+                        modifier = Modifier.fillMaxWidth().clickable { settingsViewModel.setDifficultyLevel(Difficolta.NOVIZIO.name) }
                     ) {
-                        RadioButton(selected = selectedDifficulty == Difficolta.MEDIO.name, onClick = { settingsViewModel.setDifficultyLevel(Difficolta.MEDIO.name) })
+                        RadioButton(selected = selectedDifficulty == Difficolta.NOVIZIO.name, onClick = { settingsViewModel.setDifficultyLevel(Difficolta.NOVIZIO.name) })
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Medio")
+                        Text("Novizio")
                     }
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth().clickable { settingsViewModel.setDifficultyLevel(Difficolta.DIFFICILE.name) }
+                        modifier = Modifier.fillMaxWidth().clickable { settingsViewModel.setDifficultyLevel(Difficolta.INTERMEDIO.name) }
                     ) {
-                        RadioButton(selected = selectedDifficulty == Difficolta.DIFFICILE.name, onClick = { settingsViewModel.setDifficultyLevel(Difficolta.DIFFICILE.name) })
+                        RadioButton(selected = selectedDifficulty == Difficolta.INTERMEDIO.name, onClick = { settingsViewModel.setDifficultyLevel(Difficolta.INTERMEDIO.name) })
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Difficile")
+                        Text("Intermedio")
+                    }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().clickable { settingsViewModel.setDifficultyLevel(Difficolta.AVANZATO.name) }
+                    ) {
+                        RadioButton(selected = selectedDifficulty == Difficolta.AVANZATO.name, onClick = { settingsViewModel.setDifficultyLevel(Difficolta.AVANZATO.name) })
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Avanzato")
+                    }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().clickable { settingsViewModel.setDifficultyLevel(Difficolta.ESPERTO.name) }
+                    ) {
+                        RadioButton(selected = selectedDifficulty == Difficolta.ESPERTO.name, onClick = { settingsViewModel.setDifficultyLevel(Difficolta.ESPERTO.name) })
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Esperto")
                     }
                 }
             }

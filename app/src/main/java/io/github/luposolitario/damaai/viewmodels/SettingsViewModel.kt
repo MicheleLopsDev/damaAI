@@ -51,7 +51,7 @@ class SettingsViewModel(
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue =  Difficolta.MEDIO.name // Valore di partenza
+            initialValue =  Difficolta.NOVIZIO.name // Valore di partenza
         )
 
     // --- NUOVO: Funzione per salvare la difficoltà ---

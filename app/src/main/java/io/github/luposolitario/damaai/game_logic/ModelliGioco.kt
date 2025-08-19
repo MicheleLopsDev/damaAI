@@ -67,22 +67,35 @@ class MotoreDiGioco() {
         return trovaTutteLeMosseSemplici(turnoCorrente)
     }
 
+    // Dentro la classe MotoreDiGioco
     fun eseguiMossa(mossa: Mossa): Boolean {
         val mosseValide = mosseValideDisponibili()
-        if (mossa !in mosseValide) {
+        if (!mosseValide.any { it.partenza == mossa.partenza && it.arrivo == mossa.arrivo }) {
             return false
         }
+
+        val pezzoMosso = scacchiera.pezzoA(mossa.partenza) ?: return false
 
         mossa.posizionePezzoCatturato?.let {
             scacchiera.rimuoviPezzoA(it)
         }
-
         scacchiera.eseguiMossa(mossa)
 
-        // Logica semplificata: dopo una cattura, bisognerebbe verificare se lo stesso pezzo
-        // può catturare ancora. In quel caso, il turno non cambia.
-        // Per ora, cambiamo sempre il turno per evitare complessità nella UI.
-        cambiaTurno()
+        if (mossa.posizionePezzoCatturato != null) {
+            val pezzoDopoMossa = scacchiera.pezzoA(mossa.arrivo) ?: pezzoMosso
+            val mossePostCattura = if (pezzoDopoMossa.tipo == TipoPezzo.PEDINA) {
+                trovaMosseDiCatturaPerPedina(mossa.arrivo, pezzoDopoMossa, scacchiera)
+            } else {
+                trovaMosseDiCatturaPerDamone(mossa.arrivo, pezzoDopoMossa, scacchiera)
+            }
+
+            if (mossePostCattura.isEmpty()) {
+                cambiaTurno()
+            }
+        } else {
+            cambiaTurno()
+        }
+
         return true
     }
 

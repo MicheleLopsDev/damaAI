@@ -359,7 +359,7 @@ fun GameScreen(
         val difficoltaAttuale = try {
             Difficolta.valueOf(selectedDifficulty)
         } catch (e: IllegalArgumentException) {
-            Difficolta.FACILE
+            Difficolta.PRINCIPIANTE
         }
         damaEngine.nuovaPartita(difficoltaAttuale)
         val initialPieces = parseBoardState(damaEngine.getStatoScacchiera())
@@ -492,47 +492,72 @@ fun GameScreen(
                                 val pieceAtPos = gameState.pieces.find { it.row == row && it.col == col }
 
                                 coroutineScope.launch {
+                                    // Se un pezzo è già selezionato, stiamo tentando di eseguire una mossa.
                                     if (selectedPieceCoords != null) {
                                         val startNotation = selectedPieceCoords!!.toNotazioneAlgebrica()
                                         val endNotation = clickedPos.toNotazioneAlgebrica()
                                         val moveString = "$startNotation $endNotation"
 
+                                        // Eseguiamo la mossa umana attraverso l'engine.
                                         val mossaEseguita = damaEngine.muoviPezzoUmano(moveString)
 
+                                        // Se la mossa era valida...
                                         if (mossaEseguita != null) {
                                             val playerColorText = if (turnoCorrente == Colore.BIANCO) "Bianco" else "Nero"
                                             val playerMoveLog = "Mossa $playerColorText: $moveString"
                                             Log.d("ChatLog", "Adding player move: $playerMoveLog")
                                             chatMessages = chatMessages + playerMoveLog
 
+                                            // Gestiamo l'animazione della pedina catturata.
                                             val pedinaCatturata = damaEngine.trovaPedinaCatturata(mossaEseguita)
                                             val piecesAfterMove = parseBoardState(damaEngine.getStatoScacchiera())
                                             gameState = gameState.copy(pieces = piecesAfterMove)
                                             handleCaptureAnimation(pedinaCatturata)
 
-                                            if (aiOpponent != null && damaEngine.getVincitore() == null) {
-                                                val mossaIA = damaEngine.faiMossaIA()
-                                                if (mossaIA != null) {
-                                                    val aiMoveLog = "Mossa IA: ${mossaIA.toString()}"
-                                                    Log.d("ChatLog", "Adding AI move: $aiMoveLog")
-                                                    chatMessages = chatMessages + aiMoveLog
-                                                    val pedinaCatturataIA = damaEngine.trovaPedinaCatturata(mossaIA)
-                                                    if (pedinaCatturataIA != null) {
-                                                        generateComment(aiOpponent.capturePrompt)
+                                            // --- NUOVA LOGICA DI GESTIONE TURNO ---
+                                            val turnoDopoMossa = damaEngine.getTurnoCorrente()
+                                            turnoCorrente = turnoDopoMossa
+
+                                            // Controlliamo se il turno è ANCORA del giocatore umano (Bianco).
+                                            // Questo accade solo durante una cattura multipla.
+                                            if (turnoDopoMossa == Colore.BIANCO) {
+                                                // Manteniamo il pezzo selezionato sulla sua nuova posizione.
+                                                selectedPieceCoords = mossaEseguita.arrivo
+                                                // Ricalcoliamo le mosse valide (che saranno solo altre catture).
+                                                getValidMovesForSelectedPiece()
+                                                gameState = gameState.copy(mandatoryCapturePieces = damaEngine.getPezziConCatturaObbligatoria())
+                                            } else {
+                                                // Se il turno è passato al Nero, deselezioniamo tutto e facciamo muovere l'IA.
+                                                selectedPieceCoords = null
+                                                validMoveDestinations = emptyList()
+
+                                                if (aiOpponent != null && damaEngine.getVincitore() == null) {
+                                                    val mossaIA = damaEngine.faiMossaIA()
+                                                    if (mossaIA != null) {
+                                                        val aiMoveLog = "Mossa IA: ${mossaIA.toString()}"
+                                                        Log.d("ChatLog", "Adding AI move: $aiMoveLog")
+                                                        chatMessages = chatMessages + aiMoveLog
+                                                        val pedinaCatturataIA = damaEngine.trovaPedinaCatturata(mossaIA)
+                                                        if (pedinaCatturataIA != null) {
+                                                            generateComment(aiOpponent.capturePrompt)
+                                                        }
+                                                        val finalPieces = parseBoardState(damaEngine.getStatoScacchiera())
+                                                        gameState = gameState.copy(pieces = finalPieces)
+                                                        handleCaptureAnimation(pedinaCatturataIA)
                                                     }
-                                                    val finalPieces = parseBoardState(damaEngine.getStatoScacchiera())
-                                                    gameState = gameState.copy(pieces = finalPieces)
-                                                    handleCaptureAnimation(pedinaCatturataIA)
                                                 }
+                                                // Aggiorniamo turno e pezzi obbligatori dopo la mossa dell'IA.
+                                                turnoCorrente = damaEngine.getTurnoCorrente()
+                                                gameState = gameState.copy(mandatoryCapturePieces = damaEngine.getPezziConCatturaObbligatoria())
                                             }
-                                            turnoCorrente = damaEngine.getTurnoCorrente()
-                                            gameState = gameState.copy(mandatoryCapturePieces = damaEngine.getPezziConCatturaObbligatoria())
+                                        } else {
+                                            // Se la mossa non era valida, deselezioniamo tutto.
+                                            selectedPieceCoords = null
+                                            validMoveDestinations = emptyList()
                                         }
 
-                                        selectedPieceCoords = null
-                                        validMoveDestinations = emptyList()
-
                                     } else {
+                                        // Se nessun pezzo era selezionato, stiamo tentando di selezionarne uno.
                                         val pezzoColoreCorretto = when (turnoCorrente) {
                                             Colore.BIANCO -> pieceAtPos?.color == PlayerColor.WHITE
                                             Colore.NERO -> pieceAtPos?.color == PlayerColor.BLACK
@@ -543,6 +568,7 @@ fun GameScreen(
                                         }
                                     }
 
+                                    // Controlliamo se c'è un vincitore dopo ogni interazione.
                                     damaEngine.getVincitore()?.let { vincitore ->
                                         winner = vincitore
                                         if (aiOpponent != null) {

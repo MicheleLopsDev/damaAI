@@ -63,7 +63,7 @@ class SettingsManager(private val context: Context) {
     val difficultyLevelFlow: Flow<String> = context.dataStore.data
         .map { preferences ->
             // Se non c'è un valore salvato, usiamo "FACILE" come default.
-            val difficulty = preferences[DIFFICULTY_LEVEL] ?: Difficolta.MEDIO.name
+            val difficulty = preferences[DIFFICULTY_LEVEL] ?: Difficolta.ESPERTO.name
             Log.d("SettingsDebug", "DataStore ha letto la difficoltà: $difficulty") // <-- AGGIUNGI QUESTO LOG
             difficulty
         }
