@@ -124,21 +124,32 @@ class MotoreDiGioco() {
     private fun trovaTutteLeSequenzeDiCattura(colore: Colore): List<SequenzaCattura> {
         val sequenze = mutableListOf<SequenzaCattura>()
         forEachPezzoDelGiocatore(colore) { pos, pezzo ->
-            // Avvia la ricerca ricorsiva per ogni pezzo del giocatore
-            trovaSequenzeRicorsive(pos, pezzo, scacchiera, emptyList(), null, sequenze)
+            // Avvia la ricerca ricorsiva per ogni pezzo
+            trovaSequenzeRicorsive(
+                posAttuale = pos,
+                pezzoCatturante = pezzo,
+                scacchieraCorrente = scacchiera,
+                pezziCatturatiPrecedenti = emptyList(),
+                mossaIniziale = null,
+                listaSequenzeTrovate = sequenze,
+                caselleVisitate = setOf(pos) // --- NUOVO: Inizia con la posizione di partenza
+            )
         }
         return sequenze
     }
 
+    /**
+     * VERSIONE CORRETTA con controllo anti-ciclo infinito.
+     */
     private fun trovaSequenzeRicorsive(
         posAttuale: Posizione,
         pezzoCatturante: Pezzo,
         scacchieraCorrente: Scacchiera,
         pezziCatturatiPrecedenti: List<Pezzo>,
         mossaIniziale: Mossa?,
-        listaSequenzeTrovate: MutableList<SequenzaCattura>
+        listaSequenzeTrovate: MutableList<SequenzaCattura>,
+        caselleVisitate: Set<Posizione> // --- NUOVO PARAMETRO ---
     ) {
-        // Trova le possibili catture singole da questa posizione sulla scacchiera attuale
         val mosseCatturaPossibili = if (pezzoCatturante.tipo == TipoPezzo.PEDINA) {
             trovaMosseDiCatturaPerPedina(posAttuale, pezzoCatturante, scacchieraCorrente)
         } else {
@@ -146,29 +157,30 @@ class MotoreDiGioco() {
         }
 
         if (mosseCatturaPossibili.isEmpty()) {
-            // Se non ci sono altre catture da qui, e abbiamo già catturato qualcosa,
-            // allora la sequenza precedente è valida e termina qui.
-            if (mossaIniziale != null) {
+            if (pezziCatturatiPrecedenti.isNotEmpty()) {
                 listaSequenzeTrovate.add(
                     SequenzaCattura(
-                        mossaIniziale = mossaIniziale,
+                        mossaIniziale = mossaIniziale!!,
                         pezziCatturati = pezziCatturatiPrecedenti,
                         pezzoCatturante = pezzoCatturante
                     )
                 )
             }
         } else {
-            // Per ogni possibile cattura da questa posizione...
             for (mossa in mosseCatturaPossibili) {
+                // --- CONTROLLO ANTI-CICLO ---
+                // Se la casella di arrivo è già stata visitata in questa sequenza,
+                // ignoriamo questa mossa per evitare loop infiniti.
+                if (mossa.arrivo in caselleVisitate) {
+                    continue // Salta al prossimo ciclo del for
+                }
+                // --- FINE CONTROLLO ---
+
                 val pezzoCatturatoPos = mossa.posizionePezzoCatturato!!
                 val pezzoCatturato = scacchieraCorrente.pezzoA(pezzoCatturatoPos)!!
                 val nuoviPezziCatturati = pezziCatturatiPrecedenti + pezzoCatturato
-
-                // La prima mossa della sequenza è quella che stiamo esplorando ora
                 val primaMossaDellaSequenza = mossaIniziale ?: mossa
 
-                // Aggiungiamo la sequenza attuale (anche se è solo di una cattura) come valida.
-                // Questo risolve il problema delle catture singole ignorate.
                 listaSequenzeTrovate.add(
                     SequenzaCattura(
                         mossaIniziale = primaMossaDellaSequenza,
@@ -177,19 +189,18 @@ class MotoreDiGioco() {
                     )
                 )
 
-                // Simula la mossa su una nuova scacchiera per continuare la ricerca
                 val scacchieraDopoMossa = scacchieraCorrente.copia()
-                scacchieraDopoMossa.rimuoviPezzoA(mossa.posizionePezzoCatturato)
-                scacchieraDopoMossa.eseguiMossa(Mossa(mossa.partenza, mossa.arrivo)) // Esegui solo lo spostamento
+                scacchieraDopoMossa.rimuoviPezzoA(pezzoCatturatoPos)
+                scacchieraDopoMossa.eseguiMossa(Mossa(mossa.partenza, mossa.arrivo))
 
-                // Continua la ricerca dalla nuova posizione
                 trovaSequenzeRicorsive(
-                    mossa.arrivo,
-                    pezzoCatturante,
-                    scacchieraDopoMossa,
-                    nuoviPezziCatturati,
-                    primaMossaDellaSequenza,
-                    listaSequenzeTrovate
+                    posAttuale = mossa.arrivo,
+                    pezzoCatturante = pezzoCatturante,
+                    scacchieraCorrente = scacchieraDopoMossa,
+                    pezziCatturatiPrecedenti = nuoviPezziCatturati,
+                    mossaIniziale = primaMossaDellaSequenza,
+                    listaSequenzeTrovate = listaSequenzeTrovate,
+                    caselleVisitate = caselleVisitate + mossa.arrivo // Aggiunge la nuova casella al set di quelle visitate
                 )
             }
         }

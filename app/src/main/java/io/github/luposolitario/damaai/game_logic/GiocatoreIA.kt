@@ -142,22 +142,15 @@ class GiocatoreIA(
         isMaximizing: Boolean,
         coloreIA: Colore
     ): Int {
-        var currentAlpha = alpha
-        var currentBeta = beta
-
         val hash = scacchiera.zobristHash
         val cachedScore = transpositionTable.probe(hash, profondita)
         if (cachedScore != null) {
             return cachedScore
         }
 
-        // --- MODIFICA CHIAVE: INVOCAZIONE DELLA RICERCA DI QUIESCENZA ---
         if (profondita == 0) {
-            // Quando raggiungiamo la profondità massima, non ci fermiamo.
-            // Avviamo una ricerca estesa solo per le catture.
-            return quiescenceSearch(scacchiera, currentAlpha, currentBeta, isMaximizing, coloreIA)
+            return quiescenceSearch(scacchiera, alpha, beta, isMaximizing, coloreIA)
         }
-        // --- FINE MODIFICA ---
 
         val motoreSimulato = MotoreDiGioco().apply {
             this.scacchiera = scacchiera
@@ -166,36 +159,43 @@ class GiocatoreIA(
 
         val mossePossibili = motoreSimulato.mosseValideDisponibili()
         if (mossePossibili.isEmpty()) {
-            val vincitore = if (isMaximizing) coloreIA.opposto() else coloreIA
-            return if (vincitore == coloreIA) 10000 else -10000
+            return if (isMaximizing) -10000 else 10000
         }
 
-        var migliorPunteggio = Int.MIN_VALUE
-        var peggiorPunteggio = Int.MAX_VALUE
+        var currentAlpha = alpha
+        var currentBeta = beta
+        var finalScore: Int
 
         if (isMaximizing) {
+            var migliorPunteggio = Int.MIN_VALUE
             for (mossa in mossePossibili) {
                 val scacchieraFiglio = simulaMossa(mossa, scacchiera)
+                // --- CORREZIONE CHIAVE ---
                 val turnoFiglio = coloreIA.opposto()
                 scacchieraFiglio.zobristHash = ZobristHashing.computeHash(scacchieraFiglio, turnoFiglio)
+
                 val punteggio = minimax(scacchieraFiglio, profondita - 1, currentAlpha, currentBeta, false, coloreIA)
-                migliorPunteggio = max(migliorPunteggio, punteggio)
-                currentAlpha = max(currentAlpha, migliorPunteggio)
+                migliorPunteggio = maxOf(migliorPunteggio, punteggio)
+                currentAlpha = maxOf(currentAlpha, migliorPunteggio)
                 if (currentBeta <= currentAlpha) break
             }
+            finalScore = migliorPunteggio
         } else {
+            var peggiorPunteggio = Int.MAX_VALUE
             for (mossa in mossePossibili) {
                 val scacchieraFiglio = simulaMossa(mossa, scacchiera)
+                // --- CORREZIONE CHIAVE ---
                 val turnoFiglio = coloreIA
                 scacchieraFiglio.zobristHash = ZobristHashing.computeHash(scacchieraFiglio, turnoFiglio)
+
                 val punteggio = minimax(scacchieraFiglio, profondita - 1, currentAlpha, currentBeta, true, coloreIA)
-                peggiorPunteggio = min(peggiorPunteggio, punteggio)
-                currentBeta = min(currentBeta, peggiorPunteggio)
+                peggiorPunteggio = minOf(peggiorPunteggio, punteggio)
+                currentBeta = minOf(currentBeta, peggiorPunteggio)
                 if (currentBeta <= currentAlpha) break
             }
+            finalScore = peggiorPunteggio
         }
 
-        val finalScore = if (isMaximizing) migliorPunteggio else peggiorPunteggio
         transpositionTable.store(hash, finalScore, profondita)
         return finalScore
     }
