@@ -5,6 +5,8 @@ package io.github.luposolitario.damaai.game_logic
  */
 class Scacchiera {
 
+    var zobristHash: Long = 0L
+
     // Usiamo una Mappa per memorizzare i pezzi. È efficiente perché
     // associa una Posizione a un Pezzo, solo per le caselle occupate.
     private val mappaPezzi: MutableMap<Posizione, Pezzo> = mutableMapOf()
@@ -131,5 +133,9 @@ class Scacchiera {
             builder.append("\n")
         }
         return builder.toString()
+    }
+
+    fun hasPezzi(colore: Colore): Boolean {
+        return mappaPezzi.values.any { it.colore == colore }
     }
 }

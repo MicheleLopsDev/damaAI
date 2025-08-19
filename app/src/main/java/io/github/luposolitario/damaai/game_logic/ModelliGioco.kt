@@ -34,6 +34,12 @@ class MotoreDiGioco() {
     var turnoCorrente: Colore = Colore.BIANCO
         internal set
 
+    init {
+        // Calcola l'hash iniziale quando il motore viene creato
+        scacchiera.zobristHash = ZobristHashing.computeHash(scacchiera, turnoCorrente)
+    }
+
+
     /**
      * MODIFICATO per Dama Italiana:
      * Ora calcola tutte le sequenze di cattura e restituisce solo quelle
@@ -95,6 +101,8 @@ class MotoreDiGioco() {
         } else {
             cambiaTurno()
         }
+
+        scacchiera.zobristHash = ZobristHashing.computeHash(scacchiera, turnoCorrente)
 
         return true
     }

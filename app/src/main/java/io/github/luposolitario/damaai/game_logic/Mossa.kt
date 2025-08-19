@@ -9,6 +9,7 @@ data class Mossa(
     val arrivo: Posizione,
     val posizionePezzoCatturato: Posizione? = null // La nostra aggiunta!
 ) {
+    fun isCattura(): Boolean = posizionePezzoCatturato != null
     /**
      * Restituisce la mossa nel formato che hai richiesto, es: "D4 E5".
      */

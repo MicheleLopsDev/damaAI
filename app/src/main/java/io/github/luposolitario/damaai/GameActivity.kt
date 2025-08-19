@@ -306,9 +306,15 @@ fun GameScreen(
 
                     val pedinaCatturata = damaEngine.trovaPedinaCatturata(mossaEseguita)
                     val piecesAfterMove = parseBoardState(damaEngine.getStatoScacchiera())
-                    gameState = gameState.copy(pieces = piecesAfterMove)
-                    handleCaptureAnimation(pedinaCatturata)
-
+                    gameState = gameState.copy(
+                        pieces = piecesAfterMove,
+                        mandatoryCapturePieces = emptyList() // Il cerchio scompare subito!
+                    )
+                    if (pedinaCatturata != null) {
+                        coroutineScope.launch {
+                            handleCaptureAnimation(pedinaCatturata)
+                        }
+                    }
                     turnoCorrente = damaEngine.getTurnoCorrente()
                     gameState = gameState.copy(mandatoryCapturePieces = damaEngine.getPezziConCatturaObbligatoria())
 

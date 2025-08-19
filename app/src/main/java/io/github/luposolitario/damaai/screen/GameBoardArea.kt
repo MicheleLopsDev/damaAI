@@ -1,5 +1,6 @@
 package io.github.luposolitario.damaai.screen
 
+import android.util.Log
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -57,14 +58,14 @@ fun GameBoardArea(
         null
     }
 
-    // Animazione per la dissolvenza della pedina catturata (invariata)
+    // Animazione per la dissolvenza della pedina catturata
     val capturedPieceAlpha by animateFloatAsState(
         targetValue = if (gameState.capturedPiece != null) 0f else 1f,
-        animationSpec = tween(durationMillis = 800),
+        animationSpec = tween(durationMillis = 0),
         label = "CapturedPieceAlpha"
     )
 
-    // Animazione per il contorno lampeggiante (invariata)
+    // Animazione per il contorno lampeggiante
     val infiniteTransition = rememberInfiniteTransition(label = "BlinkingBorder")
     val blinkingAlpha by infiniteTransition.animateFloat(
         initialValue = 0.3f,
@@ -89,7 +90,7 @@ fun GameBoardArea(
     ) {
         val squareSize = size.width / 8f
 
-        // 1. Disegna la scacchiera e la selezione (invariato)
+        // 1. Disegna la scacchiera e la selezione
         for (row in 0 until 8) {
             for (col in 0 until 8) {
                 val isLightSquare = (row + col) % 2 == 0
@@ -111,7 +112,7 @@ fun GameBoardArea(
             }
         }
 
-        // 2. Disegna i puntini per le mosse valide (invariato)
+        // 2. Disegna i puntini per le mosse valide
         validMoveSquares.forEach { pos ->
             drawCircle(
                 color = Color.DarkGray.copy(alpha = 0.4f),
@@ -193,25 +194,28 @@ fun GameBoardArea(
             }
         }
 
-        // --- 4. LOGICA DI DISEGNO MODIFICATA ---
-        // Ora disegniamo i contorni lampeggianti per ultimi, garantendo che siano in primo piano.
-        // Iteriamo direttamente sulla lista delle posizioni obbligatorie.
+        // 4. Disegna i contorni lampeggianti solo se c'è una pedina
         gameState.mandatoryCapturePieces.forEach { mandatoryPos ->
-            val center = Offset(
-                x = mandatoryPos.colonna * squareSize + squareSize / 2,
-                y = mandatoryPos.riga * squareSize + squareSize / 2
-            )
-            val pieceRadius = squareSize * 0.38f
-
-            drawCircle(
-                color = mandatoryCaptureColor,
-                radius = pieceRadius + (squareSize * 0.05f), // Leggermente più grande del raggio della pedina
-                center = center,
-                style = Stroke(
-                    width = squareSize * 0.08f, // Spessore del contorno
-                    cap = StrokeCap.Round
+            // Controlla se c'è una pedina in questa posizione
+            val pieceExists = gameState.pieces.any { it.row == mandatoryPos.riga && it.col == mandatoryPos.colonna }
+            Log.d("GameBoardArea", "Checking mandatory capture at [${mandatoryPos.riga}, ${mandatoryPos.colonna}]. Piece exists: $pieceExists")
+            if (pieceExists) {
+                val center = Offset(
+                    x = mandatoryPos.colonna * squareSize + squareSize / 2,
+                    y = mandatoryPos.riga * squareSize + squareSize / 2
                 )
-            )
+                val pieceRadius = squareSize * 0.38f
+
+                drawCircle(
+                    color = mandatoryCaptureColor,
+                    radius = pieceRadius + (squareSize * 0.05f), // Leggermente più grande del raggio della pedina
+                    center = center,
+                    style = Stroke(
+                        width = squareSize * 0.08f, // Spessore del contorno
+                        cap = StrokeCap.Round
+                    )
+                )
+            }
         }
     }
 }
