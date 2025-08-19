@@ -29,6 +29,8 @@ class SettingsManager(private val context: Context) {
         // --- NUOVE CHIAVI PER LA MUSICA ---
         val MUSIC_VOLUME = floatPreferencesKey("music_volume")
         val CLASSIC_SONG_ID = stringPreferencesKey("classic_song_id")
+
+        val IS_MUSIC_ENABLED = booleanPreferencesKey("is_music_enabled")
     }
 
     // --- Gestione Tema Scuro (invariata) ---
@@ -100,6 +102,18 @@ class SettingsManager(private val context: Context) {
     suspend fun setClassicSongId(songId: String) {
         context.dataStore.edit { preferences ->
             preferences[CLASSIC_SONG_ID] = songId
+        }
+    }
+
+    // AGGIUNGI SOLO QUESTO FLUSSO E QUESTA FUNZIONE ALLA FINE DELLA CLASSE
+    val isMusicEnabledFlow: Flow<Boolean> = context.dataStore.data
+        .map { preferences ->
+            preferences[IS_MUSIC_ENABLED] ?: true // Abilitata di default
+        }
+
+    suspend fun setMusicEnabled(isEnabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[IS_MUSIC_ENABLED] = isEnabled
         }
     }
 }

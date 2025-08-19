@@ -32,7 +32,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import io.github.luposolitario.damaai.R
 import io.github.luposolitario.damaai.data.availableOpponents
 import io.github.luposolitario.damaai.data.availableTeamStyles
 import io.github.luposolitario.damaai.game_logic.Difficolta
@@ -53,6 +52,7 @@ fun OptionsScreen(
     val musicVolume by settingsViewModel.musicVolume.collectAsState()
     val selectedClassicSongId by settingsViewModel.classicSongId.collectAsState()
     val isDarkMode by settingsViewModel.isDarkModeEnabled.collectAsState(initial = isSystemInDarkTheme())
+    val isMusicEnabled by settingsViewModel.isMusicEnabled.collectAsState()
 
     val classicSongs = remember {
         listOf(
@@ -112,12 +112,12 @@ fun OptionsScreen(
                             settingsViewModel.setPlayerTeamStyle(style.id)
                             if (style.id != "default") {
                                 getTrackIdByName(style.id)?.let { trackId ->
-                                    MusicManager.play(context, trackId)
+                                    MusicManager.play(context, trackId, isMusicEnabled)
                                 }
                             } else {
                                 // If classic is selected, play the currently selected classic song
                                 getTrackIdByName(selectedClassicSongId)?.let { trackId ->
-                                    MusicManager.play(context, trackId)
+                                    MusicManager.play(context, trackId, isMusicEnabled)
                                 }
                             }
                         }
@@ -150,30 +150,44 @@ fun OptionsScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
                     modifier = Modifier.fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
-                    Text(text = "Modalità Scura", style = MaterialTheme.typography.titleMedium)
+                    Text(text = "Modalità Scura")
                     Switch(
                         checked = isDarkMode,
                         onCheckedChange = { settingsViewModel.setDarkMode(it) })
                 }
             }
 
-            item { Divider(modifier = Modifier.padding(vertical = 16.dp)) }
-
-            // Section for Music and Sounds
-            item {
-                Text(
-                    "Musica e Suoni",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
+            item {  // --- 2. AGGIUNGIAMO IL NUOVO SWITCH QUI ---
+//                Text(
+//                    "Musica e Suoni",
+//                    style = MaterialTheme.typography.titleMedium,
+//                    modifier = Modifier.padding(bottom = 8.dp)
+//                )
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
+                    Text("Musica di sottofondo")
+                    Switch(
+                        checked = isMusicEnabled,
+                        onCheckedChange = { settingsViewModel.setMusicEnabled(it) }
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            // Section for Music and Sounds
+            item {
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+
                     Text("Volume", style = MaterialTheme.typography.bodyLarge)
 
                     // --- NUOVO CONTROLLO VOLUME ---
@@ -250,7 +264,7 @@ fun OptionsScreen(
                                         settingsViewModel.setClassicSongId(id)
                                         isDropdownExpanded = false
                                         getTrackIdByName(id)?.let { trackId ->
-                                            MusicManager.play(context, trackId)
+                                            MusicManager.play(context, trackId, isMusicEnabled)
                                         }
                                     }
                                 )

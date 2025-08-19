@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import io.github.luposolitario.damaai.datastore.SettingsManager
 import io.github.luposolitario.damaai.game_logic.Difficolta
+import io.github.luposolitario.damaai.media.MusicManager
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -92,6 +93,23 @@ class SettingsViewModel(
             settingsManager.setClassicSongId(songId)
         }
     }
+
+
+    // AGGIUNGI SOLO QUESTI DUE BLOCCHI ALLA FINE DELLA CLASSE
+    val isMusicEnabled: StateFlow<Boolean> = settingsManager.isMusicEnabledFlow
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = true
+        )
+
+    fun setMusicEnabled(isEnabled: Boolean) {
+        viewModelScope.launch {
+            settingsManager.setMusicEnabled(isEnabled)
+            MusicManager.setEnabled(isEnabled)
+        }
+    }
+
 }
 
 

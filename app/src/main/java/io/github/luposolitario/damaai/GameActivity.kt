@@ -18,7 +18,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.VolumeOff
@@ -230,8 +229,11 @@ fun GameScreen(
     val gemmaEngine = remember { GemmaEngine() }
 
     val selectedDifficulty by settingsViewModel.difficultyLevel.collectAsState()
+    val isMusicEnabled by settingsViewModel.isMusicEnabled.collectAsState()
     // Stato locale per l'icona del muto, inizializzato con lo stato del MusicManager
     var isMuted by remember { mutableStateOf(MusicManager.isMuted) }
+
+    MusicManager.setEnabled(isMusicEnabled)
 
     val aiOpponent: AiOpponent? = remember(playerTeamStyle.id) {
         availableOpponents.find {
@@ -344,7 +346,7 @@ fun GameScreen(
         validMoveDestinations = movesForPiece
     }
 
-    LaunchedEffect(teamStyleId, classicSongId) {
+    LaunchedEffect(teamStyleId, classicSongId,isMusicEnabled) {
         MusicManager.setVolume(musicVolume)
         val songToPlayId = if (teamStyleId == "default") {
             classicSongId
@@ -353,8 +355,11 @@ fun GameScreen(
         }
 
         getTrackIdByName(songToPlayId)?.let { trackId ->
+
+            Log.d("GameDebug", "isMusicEnabled: $isMusicEnabled")
+
             MusicManager.setVolume(musicVolume)
-            MusicManager.play(context, trackId)
+            MusicManager.play(context, trackId,isMusicEnabled)
         }
     }
 
