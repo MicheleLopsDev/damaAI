@@ -30,6 +30,7 @@ import io.github.luposolitario.damaai.data.BoardStyle
 import io.github.luposolitario.damaai.data.GameState
 import io.github.luposolitario.damaai.data.PlayerColor
 import io.github.luposolitario.damaai.data.TeamStyle
+import io.github.luposolitario.damaai.game_logic.Colore
 import io.github.luposolitario.damaai.game_logic.Posizione
 import kotlin.math.cos
 import kotlin.math.sin
@@ -37,6 +38,7 @@ import kotlin.math.sin
 @Composable
 fun GameBoardArea(
     gameState: GameState,
+    playerColor: Colore,
     playerTeamStyle: TeamStyle,
     aiTeamStyle: TeamStyle?,
     boardStyle: BoardStyle,
@@ -194,27 +196,29 @@ fun GameBoardArea(
             }
         }
 
-        // 4. Disegna i contorni lampeggianti solo se c'è una pedina
-        gameState.mandatoryCapturePieces.forEach { mandatoryPos ->
-            // Controlla se c'è una pedina in questa posizione
-            val pieceExists = gameState.pieces.any { it.row == mandatoryPos.riga && it.col == mandatoryPos.colonna }
-            Log.d("GameBoardArea", "Checking mandatory capture at [${mandatoryPos.riga}, ${mandatoryPos.colonna}]. Piece exists: $pieceExists")
-            if (pieceExists) {
-                val center = Offset(
-                    x = mandatoryPos.colonna * squareSize + squareSize / 2,
-                    y = mandatoryPos.riga * squareSize + squareSize / 2
-                )
-                val pieceRadius = squareSize * 0.38f
-
-                drawCircle(
-                    color = mandatoryCaptureColor,
-                    radius = pieceRadius + (squareSize * 0.05f), // Leggermente più grande del raggio della pedina
-                    center = center,
-                    style = Stroke(
-                        width = squareSize * 0.08f, // Spessore del contorno
-                        cap = StrokeCap.Round
+        // 4. Disegna i contorni lampeggianti solo se è il turno del bianco e c'è una pedina
+        if (playerColor == Colore.BIANCO ) {
+            gameState.mandatoryCapturePieces.forEach { mandatoryPos ->
+                // Controlla se c'è una pedina in questa posizione
+                val pieceExists = gameState.pieces.any { it.row == mandatoryPos.riga && it.col == mandatoryPos.colonna }
+                Log.d("GameBoardArea", "Checking mandatory capture at [${mandatoryPos.riga}, ${mandatoryPos.colonna}]. Piece exists: $pieceExists")
+                if (pieceExists) {
+                    val center = Offset(
+                        x = mandatoryPos.colonna * squareSize + squareSize / 2,
+                        y = mandatoryPos.riga * squareSize + squareSize / 2
                     )
-                )
+                    val pieceRadius = squareSize * 0.38f
+
+                    drawCircle(
+                        color = mandatoryCaptureColor,
+                        radius = pieceRadius + (squareSize * 0.05f), // Leggermente più grande del raggio della pedina
+                        center = center,
+                        style = Stroke(
+                            width = squareSize * 0.08f, // Spessore del contorno
+                            cap = StrokeCap.Round
+                        )
+                    )
+                }
             }
         }
     }

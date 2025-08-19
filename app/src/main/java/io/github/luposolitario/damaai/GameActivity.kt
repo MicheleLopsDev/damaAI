@@ -489,6 +489,7 @@ fun GameScreen(
                         .aspectRatio(1f)) {
                         GameBoardArea(
                             gameState = gameState,
+                            playerColor = turnoCorrente,
                             playerTeamStyle = playerTeamStyle,
                             aiTeamStyle = aiTeamStyle,
                             boardStyle = boardStyle,
