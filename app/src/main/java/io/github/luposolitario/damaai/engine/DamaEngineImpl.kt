@@ -62,9 +62,20 @@ class DamaEngineImpl : DamaEngine {
         val partitaCorrente = partita ?: return null
         if (partitaCorrente.getVincitore() != null) return null
 
-        statoPrecedente = partitaCorrente.getStatoScacchiera() // Salviamo lo stato PRIMA della mossa
+        // --- NUOVO LOG [9] ---
+        Log.d(TAG, "faiMossaIA(): Chiamata al giocatore IA per scegliere una mossa.")
+
+        statoPrecedente = partitaCorrente.getStatoScacchiera()
         val mossaIA = partitaCorrente.faiMossaIA()
-        Log.d(TAG, "Mossa IA eseguita. Stato scacchiera FINALE:\n${partitaCorrente.getStatoScacchiera()}")
+
+        // --- NUOVO LOG [10] ---
+        if (mossaIA == null) {
+            Log.e(TAG, "faiMossaIA(): L'IA ha restituito una mossa NULLA! Il gioco potrebbe bloccarsi.")
+        } else {
+            Log.d(TAG, "faiMossaIA(): L'IA ha restituito la mossa: $mossaIA. Esecuzione...")
+        }
+
+        Log.d(TAG, "Stato scacchiera FINALE dopo mossa IA:\n${partitaCorrente.getStatoScacchiera()}")
         return mossaIA
     }
 

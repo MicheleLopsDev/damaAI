@@ -311,6 +311,14 @@ fun OptionsScreen(
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("Esperto")
                     }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().clickable { settingsViewModel.setDifficultyLevel(Difficolta.MAESTRO.name) }
+                    ) {
+                        RadioButton(selected = selectedDifficulty == Difficolta.MAESTRO.name, onClick = { settingsViewModel.setDifficultyLevel(Difficolta.MAESTRO.name) })
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Maestro")
+                    }
                 }
             }
         }

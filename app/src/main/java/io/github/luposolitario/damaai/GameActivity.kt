@@ -61,9 +61,11 @@ import io.github.luposolitario.damaai.ui.theme.*
 import io.github.luposolitario.damaai.utils.getTrackIdByName
 import io.github.luposolitario.damaai.viewmodels.SettingsViewModel
 import io.github.luposolitario.damaai.viewmodels.SettingsViewModelFactory
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 
@@ -350,7 +352,7 @@ fun GameScreen(
         }
     }
 
-    LaunchedEffect(playerTeamStyle.id) {
+    LaunchedEffect(playerTeamStyle.id,selectedDifficulty) {
         Log.d("GameDebug", "LaunchedEffect di inizializzazione eseguito con difficoltà: $selectedDifficulty")
         chatMessages = emptyList()
         llmChatMessages = emptyList()
@@ -488,54 +490,62 @@ fun GameScreen(
                             validMoveSquares = validMoveDestinations,
                             aiOpponent = aiOpponent,
                             onSquareClick = { row, col ->
-                                val clickedPos = Posizione(row, col)
-                                val pieceAtPos = gameState.pieces.find { it.row == row && it.col == col }
-
                                 coroutineScope.launch {
-                                    // Se un pezzo è già selezionato, stiamo tentando di eseguire una mossa.
+
+                                    if (turnoCorrente != Colore.BIANCO || isAiThinking) {
+                                        return@launch
+                                    }
+
+                                    val clickedPos = Posizione(row, col)
+                                    val pieceAtPos = gameState.pieces.find { it.row == row && it.col == col }
                                     if (selectedPieceCoords != null) {
                                         val startNotation = selectedPieceCoords!!.toNotazioneAlgebrica()
                                         val endNotation = clickedPos.toNotazioneAlgebrica()
                                         val moveString = "$startNotation $endNotation"
 
-                                        // Eseguiamo la mossa umana attraverso l'engine.
                                         val mossaEseguita = damaEngine.muoviPezzoUmano(moveString)
 
-                                        // Se la mossa era valida...
                                         if (mossaEseguita != null) {
                                             val playerColorText = if (turnoCorrente == Colore.BIANCO) "Bianco" else "Nero"
                                             val playerMoveLog = "Mossa $playerColorText: $moveString"
-                                            Log.d("ChatLog", "Adding player move: $playerMoveLog")
                                             chatMessages = chatMessages + playerMoveLog
-
-                                            // Gestiamo l'animazione della pedina catturata.
                                             val pedinaCatturata = damaEngine.trovaPedinaCatturata(mossaEseguita)
                                             val piecesAfterMove = parseBoardState(damaEngine.getStatoScacchiera())
                                             gameState = gameState.copy(pieces = piecesAfterMove)
                                             handleCaptureAnimation(pedinaCatturata)
 
-                                            // --- NUOVA LOGICA DI GESTIONE TURNO ---
                                             val turnoDopoMossa = damaEngine.getTurnoCorrente()
                                             turnoCorrente = turnoDopoMossa
 
-                                            // Controlliamo se il turno è ANCORA del giocatore umano (Bianco).
-                                            // Questo accade solo durante una cattura multipla.
                                             if (turnoDopoMossa == Colore.BIANCO) {
-                                                // Manteniamo il pezzo selezionato sulla sua nuova posizione.
                                                 selectedPieceCoords = mossaEseguita.arrivo
-                                                // Ricalcoliamo le mosse valide (che saranno solo altre catture).
                                                 getValidMovesForSelectedPiece()
                                                 gameState = gameState.copy(mandatoryCapturePieces = damaEngine.getPezziConCatturaObbligatoria())
                                             } else {
-                                                // Se il turno è passato al Nero, deselezioniamo tutto e facciamo muovere l'IA.
                                                 selectedPieceCoords = null
                                                 validMoveDestinations = emptyList()
 
                                                 if (aiOpponent != null && damaEngine.getVincitore() == null) {
-                                                    val mossaIA = damaEngine.faiMossaIA()
+
+                                                    // --- INIZIO MODIFICA CRUCIALE ---
+
+                                                    // 1. Attiviamo l'indicatore "Sta pensando..."
+                                                    isAiThinking = true
+
+                                                    // 2. Spostiamo il calcolo pesante su un thread in background (Dispatchers.Default)
+                                                    val mossaIA = withContext(Dispatchers.Default) {
+                                                        damaEngine.faiMossaIA()
+                                                    }
+
+                                                    // 3. Una volta ottenuta la mossa, torniamo sul thread principale e aggiorniamo la UI
+                                                    isAiThinking = false
+
+                                                    // --- FINE MODIFICA CRUCIALE ---
+
+                                                    Log.d("GameScreen_Debug", "Risultato di damaEngine.faiMossaIA(): $mossaIA")
+
                                                     if (mossaIA != null) {
                                                         val aiMoveLog = "Mossa IA: ${mossaIA.toString()}"
-                                                        Log.d("ChatLog", "Adding AI move: $aiMoveLog")
                                                         chatMessages = chatMessages + aiMoveLog
                                                         val pedinaCatturataIA = damaEngine.trovaPedinaCatturata(mossaIA)
                                                         if (pedinaCatturataIA != null) {
@@ -546,18 +556,14 @@ fun GameScreen(
                                                         handleCaptureAnimation(pedinaCatturataIA)
                                                     }
                                                 }
-                                                // Aggiorniamo turno e pezzi obbligatori dopo la mossa dell'IA.
                                                 turnoCorrente = damaEngine.getTurnoCorrente()
                                                 gameState = gameState.copy(mandatoryCapturePieces = damaEngine.getPezziConCatturaObbligatoria())
                                             }
                                         } else {
-                                            // Se la mossa non era valida, deselezioniamo tutto.
                                             selectedPieceCoords = null
                                             validMoveDestinations = emptyList()
                                         }
-
                                     } else {
-                                        // Se nessun pezzo era selezionato, stiamo tentando di selezionarne uno.
                                         val pezzoColoreCorretto = when (turnoCorrente) {
                                             Colore.BIANCO -> pieceAtPos?.color == PlayerColor.WHITE
                                             Colore.NERO -> pieceAtPos?.color == PlayerColor.BLACK
@@ -568,7 +574,6 @@ fun GameScreen(
                                         }
                                     }
 
-                                    // Controlliamo se c'è un vincitore dopo ogni interazione.
                                     damaEngine.getVincitore()?.let { vincitore ->
                                         winner = vincitore
                                         if (aiOpponent != null) {
@@ -598,7 +603,7 @@ fun GameScreen(
                 Spacer(Modifier.height(16.dp))
 
                 if (aiOpponent != null) {
-                    AIOpponentHeader(name = aiOpponent.name,aiOpponent.imageResId, isThinking = isAiThinking)
+                    AIOpponentHeader(name = aiOpponent.name,aiOpponent.imageResId, isThinking = isAiThinking,turnoCorrente = turnoCorrente,difficulty = selectedDifficulty)
                 } else {
                     TurnoGiocatoreHeader(turnoCorrente = turnoCorrente)
                 }
@@ -672,24 +677,35 @@ fun TurnoGiocatoreHeader(turnoCorrente: Colore, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun AIOpponentHeader(name: String,imageResId: Int, isThinking: Boolean, modifier: Modifier = Modifier) {
+fun AIOpponentHeader(name: String,imageResId: Int, isThinking: Boolean,turnoCorrente: Colore,difficulty: String, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
             .fillMaxWidth()
             .padding(start = 8.dp, end = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+
+        val borderModifier = if (turnoCorrente == Colore.NERO) {
+            // Applica un bordo nero e spesso quando è il turno dell'IA (Nero)
+            Modifier.border(3.dp, Color.Red, CircleShape)
+        } else {
+            // Nessun bordo quando non è il suo turno
+            Modifier
+        }
+
         Image(
             painter = painterResource(id = imageResId),
             contentDescription = "Avatar dell'avversario AI",
             modifier = Modifier
                 .size(80.dp)
+                .then(borderModifier) // <<-- 2. APPLICA IL MODIFIER QUI
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         )
         Spacer(modifier = Modifier.width(12.dp))
         Column {
-            Text(text = name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            val opponentTitle = "$name ($difficulty)"
+            Text(text = opponentTitle, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             val statusText = if (isThinking) "Sta scrivendo..." else "Online"
             val statusColor = if (isThinking) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
             Text(text = statusText, style = MaterialTheme.typography.bodySmall, color = statusColor)

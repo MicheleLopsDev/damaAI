@@ -13,6 +13,8 @@ import java.util.concurrent.atomic.AtomicBoolean // <-- IMPORTA QUESTO
 
 class GemmaEngine : InferenceEngine {
     private val tag = "GemmaEngine"
+
+    private var isGemmaDownload: Boolean = false
     private var llmInference: LlmInference? = null
     private var session: LlmInferenceSession? = null
     private var sessionOptions: LlmInferenceSession.LlmInferenceSessionOptions? = null
@@ -32,6 +34,8 @@ class GemmaEngine : InferenceEngine {
     override suspend fun load(context: Context, modelPath: String) {
         if (!File(modelPath).exists()) {
             throw IllegalStateException("Modello Gemma non trovato al percorso: $modelPath")
+        }else{
+            isGemmaDownload=true
         }
 
         try {
@@ -94,41 +98,51 @@ class GemmaEngine : InferenceEngine {
     override fun generateMove(prompt: String, boardState: String): Flow<String> = callbackFlow {
         // Controlla se il motore è già occupato.
         // compareAndSet è un'operazione atomica: imposta a true solo se il valore attuale è false.
-        if (!isGenerating.compareAndSet(false, true)) {
-            Log.w(tag, "Il motore è occupato. La nuova richiesta verrà ignorata.")
-            close(IllegalStateException("Il motore è già occupato con una richiesta precedente."))
-            return@callbackFlow
-        }
 
-        if (session == null) {
-            trySend("[ERRORE: Sessione non inizializzata]").isSuccess
-            close()
-            isGenerating.set(false) // Sblocca la sicura in caso di errore
-            return@callbackFlow
-        }
+        if (isGemmaDownload) {
 
-        try {
-            val fullPrompt = "$prompt\n\nHere is the chessboard:\n$boardState"
-            session!!.addQueryChunk(fullPrompt)
-            session!!.generateResponseAsync { partialResponse, done ->
-                if (isActive) {
-                    val cleanedResponse = partialResponse.replace("*", "\"")
-                    cleanedResponse?.let { trySend(it) }
-                }
-                if (done) {
-                    close() // Questo triggererà awaitClose
-                }
+            if (!isGenerating.compareAndSet(false, true)) {
+                Log.w(tag, "Il motore è occupato. La nuova richiesta verrà ignorata.")
+                close(IllegalStateException("Il motore è già occupato con una richiesta precedente."))
+                return@callbackFlow
             }
-        } catch (e: Exception) {
-            Log.e(tag, "Errore in generateResponseAsync (testuale).", e)
-            close(e) // Questo triggererà awaitClose
-        }
 
-        // Questo blocco viene eseguito SEMPRE, sia che la generazione finisca
-        // con successo, sia che venga cancellata o che vada in errore.
-        awaitClose {
-            Log.d(tag, "Flow chiuso. Rilascio della sicura.")
-            isGenerating.set(false) // Fondamentale: sblocca la sicura!
+            if (session == null) {
+                trySend("[ERRORE: Sessione non inizializzata]").isSuccess
+                close()
+                isGenerating.set(false) // Sblocca la sicura in caso di errore
+                return@callbackFlow
+            }
+
+            try {
+                val fullPrompt = "$prompt\n\nHere is the chessboard:\n$boardState"
+                session!!.addQueryChunk(fullPrompt)
+                session!!.generateResponseAsync { partialResponse, done ->
+                    if (isActive) {
+                        val cleanedResponse = partialResponse.replace("*", "\"")
+                        cleanedResponse?.let { trySend(it) }
+                    }
+                    if (done) {
+                        close() // Questo triggererà awaitClose
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(tag, "Errore in generateResponseAsync (testuale).", e)
+                close(e) // Questo triggererà awaitClose
+            }
+
+            // Questo blocco viene eseguito SEMPRE, sia che la generazione finisca
+            // con successo, sia che venga cancellata o che vada in errore.
+            awaitClose {
+                Log.d(tag, "Flow chiuso. Rilascio della sicura.")
+                isGenerating.set(false) // Fondamentale: sblocca la sicura!
+            }
+        }else{
+            Log.w(tag, "Il modello Gemma non è ancora scaricato.")
+            close()
+            isGenerating.set(false)
+            return@callbackFlow
         }
     }
+
 }

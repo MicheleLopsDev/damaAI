@@ -1,12 +1,15 @@
-// File: GiocatoreIA.kt
 package io.github.luposolitario.damaai.game_logic
 
+import android.util.Log
+
+// Livelli di difficoltà aggiornati con il nuovo livello MAESTRO
 enum class Difficolta(val profonditaMinimax: Int) {
     PRINCIPIANTE(0),
     NOVIZIO(1),
     INTERMEDIO(3),
     AVANZATO(5),
-    ESPERTO(7)
+    ESPERTO(8),
+    MAESTRO(10)
 }
 
 class GiocatoreIA(
@@ -14,39 +17,68 @@ class GiocatoreIA(
     private val motore: MotoreDiGioco
 ) {
 
+    private val TAG = "GiocatoreIA_Debug"
+
+    // La logica di scegliMossa e minimax rimane invariata, userà la nuova `calcolaPunteggio`.
     fun scegliMossa(): Mossa? {
         val mosseDisponibili = motore.mosseValideDisponibili()
-        if (mosseDisponibili.isEmpty()) return null
+
+        // --- NUOVO LOG [1] ---
+        Log.d(TAG, "===== Inizio Turno IA =====")
+        Log.d(TAG, "Difficoltà: $difficolta")
+        Log.d(TAG, "Mosse disponibili (${mosseDisponibili.size}): ${mosseDisponibili.joinToString()}")
+
+
+        if (mosseDisponibili.isEmpty()) {
+            // --- NUOVO LOG [2] ---
+            Log.w(TAG, "Nessuna mossa disponibile per l'IA. Ritorno null.")
+            return null
+        }
 
         if (difficolta == Difficolta.PRINCIPIANTE) {
-            return mosseDisponibili.random()
+            val mossaScelta = mosseDisponibili.random()
+            // --- NUOVO LOG [3] ---
+            Log.d(TAG, "Livello PRINCIPIANTE: Mossa scelta casualmente -> $mossaScelta")
+            return mossaScelta
         }
 
         return trovaMossaMiglioreConMinimax(mosseDisponibili)
     }
 
+    // In GiocatoreIA.kt
     private fun trovaMossaMiglioreConMinimax(mosse: List<Mossa>): Mossa? {
         val coloreIA = motore.turnoCorrente
-        var migliorMossa: Mossa? = mosse.firstOrNull()
+        var migliorMossa: Mossa? = null
         var migliorPunteggio = Int.MIN_VALUE
 
-        for (mossa in mosse) {
-            val scacchieraSimulata = simulaMossa(mossa, motore.scacchiera)
-            val punteggio = minimax(
-                scacchiera = scacchieraSimulata,
-                profondita = difficolta.profonditaMinimax,
-                alpha = Int.MIN_VALUE,
-                beta = Int.MAX_VALUE,
-                isMaximizing = false,
-                coloreIA = coloreIA
-            )
+        try {
+            migliorMossa = mosse.firstOrNull() // Imposta una mossa di default
 
-            if (punteggio > migliorPunteggio) {
-                migliorPunteggio = punteggio
-                migliorMossa = mossa
+            for (mossa in mosse) {
+                val scacchieraSimulata = simulaMossa(mossa, motore.scacchiera)
+                val punteggio = minimax(
+                    scacchiera = scacchieraSimulata,
+                    profondita = difficolta.profonditaMinimax,
+                    alpha = Int.MIN_VALUE,
+                    beta = Int.MAX_VALUE,
+                    isMaximizing = false,
+                    coloreIA = coloreIA
+                )
+
+                Log.i("GiocatoreIA_Debug", "Mossa valutata: $mossa -> Punteggio: $punteggio")
+
+                if (punteggio > migliorPunteggio) {
+                    migliorPunteggio = punteggio
+                    migliorMossa = mossa
+                    Log.d("GiocatoreIA_Debug", "!!! Nuova mossa migliore trovata: $migliorMossa (Punteggio: $migliorPunteggio)")
+                }
             }
+        } catch (e: Exception) {
+            Log.e("GiocatoreIA_Debug", "ERRORE CRITICO in Minimax! Si procede con una mossa casuale.", e)
         }
-        return migliorMossa
+
+        // CONTROLLO DI SICUREZZA FINALE: se `migliorMossa` è null, ne sceglie una a caso tra quelle valide.
+        return migliorMossa ?: mosse.randomOrNull()
     }
 
     private fun minimax(
@@ -68,7 +100,9 @@ class GiocatoreIA(
 
         val mossePossibili = motoreSimulato.mosseValideDisponibili()
         if (mossePossibili.isEmpty()) {
-            return calcolaPunteggio(scacchiera, coloreIA)
+            // Se non ci sono mosse, è una condizione terminale (vittoria o sconfitta netta)
+            val vincitore = if (isMaximizing) coloreIA.opposto() else coloreIA
+            return if (vincitore == coloreIA) 10000 else -10000
         }
 
         var currentAlpha = alpha
@@ -106,25 +140,43 @@ class GiocatoreIA(
         return scacchieraSimulata
     }
 
+    /**
+     * NUOVA FUNZIONE DI VALUTAZIONE POTENZIATA
+     * Assegna un punteggio a una configurazione della scacchiera tenendo conto di più fattori strategici.
+     */
     private fun calcolaPunteggio(scacchiera: Scacchiera, coloreIA: Colore): Int {
         var punteggio = 0
-        val valorePedina = 10
-        val valoreDamone = 30
+        val valorePedina = 100 // Aumentiamo i valori base per dare più spazio ai bonus/malus
+        val valoreDamone = 300
 
         for (riga in 0..7) {
             for (colonna in 0..7) {
-                val pezzo = scacchiera.pezzoA(Posizione(riga, colonna))
+                val pos = Posizione(riga, colonna)
+                val pezzo = scacchiera.pezzoA(pos)
                 if (pezzo != null) {
-                    val valoreBase = if (pezzo.tipo == TipoPezzo.DAMONE) valoreDamone else valorePedina
+                    var valoreBase = if (pezzo.tipo == TipoPezzo.DAMONE) valoreDamone else valorePedina
+
+                    // 1. Bonus Posizionale (invariato, ma più impattante con i nuovi valori)
                     var bonusPosizionale = 0
                     if (pezzo.tipo == TipoPezzo.PEDINA) {
-                        if (pezzo.colore == Colore.BIANCO) {
-                            bonusPosizionale = (7 - riga)
-                        } else {
-                            bonusPosizionale = riga
+                        bonusPosizionale = if (pezzo.colore == Colore.BIANCO) (7 - riga) * 5 else riga * 5
+                    }
+
+                    // 2. Bonus Sicurezza e Controllo del Centro
+                    var bonusSicurezza = 0
+                    // Le pedine sulle prime/ultime due righe sono "ancore" difensive importanti
+                    if (pezzo.tipo == TipoPezzo.PEDINA) {
+                        if ((pezzo.colore == Colore.BIANCO && riga > 5) || (pezzo.colore == Colore.NERO && riga < 2)) {
+                            bonusSicurezza += 10
                         }
                     }
-                    val valoreTotale = valoreBase + bonusPosizionale
+                    // I pezzi che controllano il centro sono più potenti
+                    if (colonna in 2..5) {
+                        bonusSicurezza += 5
+                    }
+
+                    val valoreTotale = valoreBase + bonusPosizionale + bonusSicurezza
+
                     if (pezzo.colore == coloreIA) {
                         punteggio += valoreTotale
                     } else {

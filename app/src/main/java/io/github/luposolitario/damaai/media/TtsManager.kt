@@ -34,9 +34,9 @@ object TtsManager : TextToSpeech.OnInitListener {
         if (status == TextToSpeech.SUCCESS) {
             availableVoices = tts?.voices?.toList() ?: emptyList()
             // Log per vedere tutte le voci (lo lascio per riferimento)
-            availableVoices.forEach { voice ->
-                Log.i(TAG, "Voce disponibile: Nome='${voice.name}', Lingua='${voice.locale}'")
-            }
+//            availableVoices.forEach { voice ->
+//                Log.i(TAG, "Voce disponibile: Nome='${voice.name}', Lingua='${voice.locale}'")
+//            }
             isReady = true
             processQueue()
         } else {
