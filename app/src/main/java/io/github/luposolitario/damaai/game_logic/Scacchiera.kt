@@ -27,6 +27,11 @@ class Scacchiera {
         mappaPezzi.putAll(pezzi)
     }
 
+
+    fun contaPezzi(): Int {
+        return mappaPezzi.size
+    }
+
     /**
      * Crea una copia esatta di questa scacchiera.
      * Fondamentale per l'IA per simulare mosse senza alterare lo stato reale del gioco.

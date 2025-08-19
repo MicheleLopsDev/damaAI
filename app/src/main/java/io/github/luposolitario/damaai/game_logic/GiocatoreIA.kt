@@ -24,28 +24,43 @@ class GiocatoreIA(
     private val transpositionTable = TranspositionTable()
     // La logica di scegliMossa e minimax rimane invariata, userà la nuova `calcolaPunteggio`.
     fun scegliMossa(): Mossa? {
+        // --- INTEGRAZIONE LIBRO DI APERTURE ---
+        // Controlliamo il libro solo per i primi 7 turni di gioco (14 mezzi-turni)
+        // e solo se non siamo in una situazione di cattura (le catture hanno sempre la priorità).
 
-        transpositionTable.clear()
-
+        // CORREZIONE: Aggiunto "motore." prima di "scacchiera"
+        val numeroPezzi = motore.scacchiera.contaPezzi()
         val mosseDisponibili = motore.mosseValideDisponibili()
-        Log.d(TAG, "===== Inizio Turno IA =====")
-        Log.d(TAG, "Difficoltà: $difficolta")
+
+        if (numeroPezzi > 20 && !mosseDisponibili.any { it.isCattura() }) {
+            // CORREZIONE: Aggiunto "motore." prima di "scacchiera"
+            val bookMoveString = OpeningBook.getMove(motore.scacchiera.zobristHash)
+            if (bookMoveString != null) {
+                Log.d(TAG, "MOSSA DAL LIBRO: $bookMoveString")
+                // Convertiamo la stringa in un oggetto Mossa
+                return parseMossaFromString(bookMoveString)
+            }
+        }
+        // --- FINE INTEGRAZIONE ---
+
+        // Se non c'è una mossa nel libro, procedi con il calcolo normale.
+        transpositionTable.clear()
+        Log.d(TAG, "===== Inizio Turno IA / Difficoltà: $difficolta =====")
         Log.d(TAG, "Mosse disponibili (${mosseDisponibili.size}): ${mosseDisponibili.joinToString()}")
 
-        if (mosseDisponibili.isEmpty()) {
-            Log.w(TAG, "Nessuna mossa disponibile per l'IA. Ritorno null.")
-            return null
-        }
-
-        if (difficolta == Difficolta.PRINCIPIANTE) {
-            val mossaScelta = mosseDisponibili.random()
-            Log.d(TAG, "Livello PRINCIPIANTE: Mossa scelta casualmente -> $mossaScelta")
-            return mossaScelta
-        }
+        if (mosseDisponibili.isEmpty()) return null
+        if (difficolta == Difficolta.PRINCIPIANTE) return mosseDisponibili.random()
 
         return trovaMossaMiglioreConRicercaIterativa(mosseDisponibili)
     }
 
+    private fun parseMossaFromString(moveString: String): Mossa? {
+        val parts = moveString.split(" ")
+        if (parts.size != 2) return null
+        val from = Posizione.fromAlgebraic(parts[0])
+        val to = Posizione.fromAlgebraic(parts[1])
+        return if (from != null && to != null) Mossa(from, to) else null
+    }
 
     /**
      * NUOVA STRATEGIA DI RICERCA: ITERATIVE DEEPENING
@@ -280,66 +295,74 @@ class GiocatoreIA(
      */
     private fun calcolaPunteggio(scacchiera: Scacchiera, coloreIA: Colore): Int {
         val coloreAvversario = coloreIA.opposto()
-        if (!scacchiera.hasPezzi(coloreAvversario)) return 100000
-        if (!scacchiera.hasPezzi(coloreIA)) return -100000
+        val numeroPezziTotali = scacchiera.contaPezzi()
 
-        val punteggioIA = calcolaPunteggioPerColore(scacchiera, coloreIA)
-        val punteggioAvversario = calcolaPunteggioPerColore(scacchiera, coloreAvversario)
+        if (!scacchiera.hasPezzi(coloreAvversario)) return 100000 // Vittoria
+        if (!scacchiera.hasPezzi(coloreIA)) return -100000      // Sconfitta
 
-        return punteggioIA - punteggioAvversario
+        val punteggioIA = calcolaPunteggioPerColore(scacchiera, coloreIA, numeroPezziTotali)
+        val punteggioAvversario = calcolaPunteggioPerColore(scacchiera, coloreAvversario, numeroPezziTotali)
+
+        // Aggiungiamo un piccolo bonus per il giocatore che ha il turno, che è importante nei finali tesi
+        val bonusTurno = if (motore.turnoCorrente == coloreIA) 5 else -5
+
+        return (punteggioIA - punteggioAvversario) + bonusTurno
     }
 
 
-    private fun calcolaPunteggioPerColore(scacchiera: Scacchiera, colore: Colore): Int {
-        // Pesi per la valutazione
+    private fun calcolaPunteggioPerColore(scacchiera: Scacchiera, colore: Colore, pezziTotali: Int): Int {
+        // Pesi base
         val valorePedina = 200
-        val valoreDamone = 600
+        val valoreDamoneBase = 500
 
         var punteggioMateriale = 0
         var punteggioPosizionale = 0
-        var numeroPedine = 0
-        var numeroDame = 0
+
+        // --- NUOVA LOGICA DI FASE DI GIOCO ---
+        // Determiniamo se siamo in apertura, mediogioco o finale
+        val isEndgame = pezziTotali <= 10
+        val isMidgame = pezziTotali <= 18
 
         for (riga in 0..7) {
             for (colonna in 0..7) {
-                val pos = Posizione(riga, colonna)
-                val pezzo = scacchiera.pezzoA(pos)
-
+                val pezzo = scacchiera.pezzoA(Posizione(riga, colonna))
                 if (pezzo != null && pezzo.colore == colore) {
                     if (pezzo.tipo == TipoPezzo.DAMONE) {
-                        numeroDame++
+                        // Nel finale, il valore di una dama aumenta drasticamente
+                        val valoreDamone = if (isEndgame) valoreDamoneBase + 200 else valoreDamoneBase
                         punteggioMateriale += valoreDamone
-                        // Bonus per le dame centralizzate
-                        if (riga in 2..5 && colonna in 2..5) punteggioPosizionale += 20
-                    } else {
-                        numeroPedine++
+                    } else { // PEDINA
                         punteggioMateriale += valorePedina
 
-                        // Bonus di struttura e posizione per le pedine
+                        // La spinta per la promozione diventa cruciale nel finale
                         val bonusAvanzamento = if (colore == Colore.BIANCO) (7 - riga) else riga
-                        punteggioPosizionale += bonusAvanzamento * 5
+                        val moltiplicatoreAvanzamento = if (isEndgame) 20 else 5 // Pesa molto di più a fine partita
+                        punteggioPosizionale += bonusAvanzamento * moltiplicatoreAvanzamento
 
-                        // Pedine sulla riga di fondo sono cruciali per la difesa
-                        if ((colore == Colore.BIANCO && riga == 7) || (colore == Colore.NERO && riga == 0)) {
-                            punteggioPosizionale += 25
+                        // La difesa della base è importante soprattutto in apertura/mediogioco
+                        if (!isEndgame) {
+                            if ((colore == Colore.BIANCO && riga == 7) || (colore == Colore.NERO && riga == 0)) {
+                                punteggioPosizionale += 25
+                            }
                         }
+                    }
 
-                        // Pedine "a cuneo" che controllano il centro
-                        if ((colore == Colore.BIANCO && riga in 4..5) || (colore == Colore.NERO && riga in 2..3)) {
-                            if (colonna in 3..4) punteggioPosizionale += 15
+                    // Il controllo del centro è più importante in mediogioco
+                    if (isMidgame && !isEndgame) {
+                        if (riga in 3..4 && colonna in 2..5) {
+                            punteggioPosizionale += 15
                         }
                     }
                 }
             }
         }
 
-        // Modificatore di fase di gioco: più il gioco è avanzato (meno pezzi), più le dame sono importanti
-        val faseDiGioco = (numeroPedine + numeroDame) / 24.0 // Valore da 1.0 (inizio) a ~0 (fine)
-        if (faseDiGioco < 0.4) { // Finale di partita
-            punteggioMateriale += numeroDame * 100 // Le dame diventano ancora più decisive
-        }
+        // Il bonus di mobilità è sempre importante
+        val motoreSimulato = MotoreDiGioco()
+        motoreSimulato.scacchiera = scacchiera
+        motoreSimulato.turnoCorrente = colore
+        punteggioPosizionale += motoreSimulato.mosseValideDisponibili().size * 2
 
-        // Il punteggio finale è una combinazione di materiale e posizione
         return punteggioMateriale + punteggioPosizionale
     }
 }
