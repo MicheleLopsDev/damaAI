@@ -343,38 +343,53 @@ fun GameScreen(
         }
     }
 
-    LaunchedEffect(playerTeamStyle.id,selectedDifficulty) {
-        Log.d("GameDebug", "LaunchedEffect di inizializzazione eseguito con difficoltà: $selectedDifficulty")
-        chatMessages = emptyList()
-        llmChatMessages = emptyList()
-        winner = null
-        finalAiComment = null
-        val difficoltaAttuale = try {
-            Difficolta.valueOf(selectedDifficulty!!)
-        } catch (e: IllegalArgumentException) {
-            Difficolta.PRINCIPIANTE
-        }
-        damaEngine.nuovaPartita(difficoltaAttuale)
-        val initialPieces = parseBoardState(damaEngine.getStatoScacchiera())
-        val initialMandatory = damaEngine.getPezziConCatturaObbligatoria()
-        gameState = gameState.copy(pieces = initialPieces, mandatoryCapturePieces = initialMandatory)
-        turnoCorrente = damaEngine.getTurnoCorrente()
+    LaunchedEffect(playerTeamStyle.id, selectedDifficulty) {
+        // --- INIZIO MODIFICA ---
+        // Spostiamo TUTTA la logica di setup in un blocco in background
+        withContext(Dispatchers.IO) {
+            Log.d(
+                "GameDebug",
+                "Inizio inizializzazione in background con difficoltà: $selectedDifficulty"
+            )
 
-        if (aiOpponent != null) {
-            try {
-                val modelPath = ModelSettingsManager.getDmModelFilePath(context)
-                if (modelPath.isNotBlank()) {
-                    withContext(Dispatchers.IO) {
+            val difficoltaAttuale = try {
+                Difficolta.valueOf(selectedDifficulty!!)
+            } catch (e: IllegalArgumentException) {
+                Difficolta.PRINCIPIANTE
+            }
+            damaEngine.nuovaPartita(difficoltaAttuale)
+
+            val initialPieces = parseBoardState(damaEngine.getStatoScacchiera())
+            val initialMandatory = damaEngine.getPezziConCatturaObbligatoria()
+
+            // Aggiorniamo lo stato della UI solo alla fine, tornando sul thread principale
+            withContext(Dispatchers.Main) {
+                gameState =
+                    GameState(pieces = initialPieces, mandatoryCapturePieces = initialMandatory)
+                turnoCorrente = damaEngine.getTurnoCorrente()
+                chatMessages = emptyList()
+                llmChatMessages = emptyList()
+                winner = null
+                finalAiComment = null
+            }
+
+            if (aiOpponent != null) {
+                try {
+                    val modelPath = ModelSettingsManager.getDmModelFilePath(context)
+                    if (modelPath.isNotBlank()) {
                         gemmaEngine.load(context, modelPath)
+                        // generateComment è già asincrono, non necessita di withContext
+                        generateComment(aiOpponent.openingPrompt)
+                    } else {
+                        withContext(Dispatchers.Main) {
+                            val errorMessage = "ERRORE: Modello LLM non trovato."
+                            Log.e("ChatLog", errorMessage)
+                            chatMessages = chatMessages + errorMessage
+                        }
                     }
-                    generateComment(aiOpponent.openingPrompt)
-                } else {
-                    val errorMessage = "ERRORE: Modello LLM non trovato."
-                    Log.e("ChatLog", errorMessage)
-                    chatMessages = chatMessages + errorMessage
+                } catch (e: Exception) {
+                    Log.e("GemmaIntegration", "Errore caricamento modello Gemma", e)
                 }
-            } catch (e: Exception) {
-                Log.e("GemmaIntegration", "Errore caricamento modello Gemma", e)
             }
         }
     }
