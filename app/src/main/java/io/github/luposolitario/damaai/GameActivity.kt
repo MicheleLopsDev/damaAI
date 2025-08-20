@@ -505,7 +505,7 @@ fun GameScreen(
                             onSquareClick = { row, col ->
                                 coroutineScope.launch {
 
-                                    if (turnoCorrente != Colore.BIANCO || isAiThinking) {
+                                    if ( turnoCorrente != Colore.BIANCO ) {
                                         return@launch
                                     }
 
