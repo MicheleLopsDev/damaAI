@@ -146,7 +146,7 @@ fun CreditsScreen() {
 fun CustomizationScreen() {
     val application = (LocalView.current.context.applicationContext as DamaAIApplication)
     val settingsViewModel: SettingsViewModel = viewModel(
-        factory = SettingsViewModelFactory(application.settingsManager)
+        factory = SettingsViewModelFactory(application,application.settingsManager)
     )
 
     val selectedTeamStyleId by settingsViewModel.playerTeamStyleId.collectAsState()

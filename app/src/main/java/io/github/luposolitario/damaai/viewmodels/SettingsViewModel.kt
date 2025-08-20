@@ -61,11 +61,14 @@ class SettingsViewModel(
         }
     }
 
-    val difficultyLevel: StateFlow<String> = settingsManager.difficultyLevelFlow
+    // --- MODIFICA QUI ---
+    // Il valore iniziale ora è null per rappresentare lo stato di "caricamento".
+    // Il tipo diventa nullabile (String?).
+    val difficultyLevel: StateFlow<String?> = settingsManager.difficultyLevelFlow
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue =  Difficolta.NOVIZIO.name
+            initialValue =  null
         )
     fun setDifficultyLevel(level: String) {
         viewModelScope.launch {

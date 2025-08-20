@@ -107,10 +107,11 @@ fun AppNavigation(settingsViewModel: SettingsViewModel) {
     val boardStyleId by settingsViewModel.boardStyleId.collectAsState()
     val boardStyle = availableBoardStyles.find { it.id == boardStyleId } ?: availableBoardStyles.first()
     val selectedStyleId by settingsViewModel.playerTeamStyleId.collectAsState()
+    val difficulty by settingsViewModel.difficultyLevel.collectAsState()
 
     NavHost(navController = navController, startDestination = "game_screen") {
         composable(route = "game_screen") {
-            if (selectedStyleId != null) {
+            if (selectedStyleId != null && playerStyleId != null && difficulty != null) {
                 GameScreen(
                     navController = navController,
                     playerTeamStyle = playerTeamStyle,
@@ -349,7 +350,7 @@ fun GameScreen(
         winner = null
         finalAiComment = null
         val difficoltaAttuale = try {
-            Difficolta.valueOf(selectedDifficulty)
+            Difficolta.valueOf(selectedDifficulty!!)
         } catch (e: IllegalArgumentException) {
             Difficolta.PRINCIPIANTE
         }
@@ -363,7 +364,9 @@ fun GameScreen(
             try {
                 val modelPath = ModelSettingsManager.getDmModelFilePath(context)
                 if (modelPath.isNotBlank()) {
-                    gemmaEngine.load(context, modelPath)
+                    withContext(Dispatchers.IO) {
+                        gemmaEngine.load(context, modelPath)
+                    }
                     generateComment(aiOpponent.openingPrompt)
                 } else {
                     val errorMessage = "ERRORE: Modello LLM non trovato."
@@ -584,7 +587,7 @@ fun GameScreen(
                 Spacer(Modifier.height(16.dp))
 
                 if (aiOpponent != null) {
-                    AIOpponentHeader(name = aiOpponent.name,aiOpponent.imageResId, isThinking = isAiThinking,turnoCorrente = turnoCorrente,difficulty = selectedDifficulty)
+                    AIOpponentHeader(name = aiOpponent.name,aiOpponent.imageResId, isThinking = isAiThinking,turnoCorrente = turnoCorrente,difficulty = selectedDifficulty!!)
                 } else {
                     TurnoGiocatoreHeader(turnoCorrente = turnoCorrente)
                 }
