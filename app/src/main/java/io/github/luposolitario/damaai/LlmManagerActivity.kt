@@ -27,7 +27,7 @@ class LlmManagerActivity : ComponentActivity() {
             val application = application as DamaAIApplication
 
             val settingsViewModel: SettingsViewModel = viewModel(
-                factory = SettingsViewModelFactory(application.settingsManager)
+                factory = SettingsViewModelFactory(application, application.settingsManager)
             )
             val useDarkTheme by settingsViewModel.isDarkModeEnabled.collectAsState(initial = isSystemInDarkTheme())
 

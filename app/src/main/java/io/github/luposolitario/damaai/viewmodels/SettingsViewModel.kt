@@ -88,7 +88,7 @@ class SettingsViewModel(
     val classicSongId: StateFlow<String> = settingsManager.classicSongIdFlow
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubsided(5000),
+            started = SharingStarted.WhileSubscribed(5000),
             initialValue = "classic_1"
         )
     fun setClassicSongId(songId: String) {
@@ -101,7 +101,7 @@ class SettingsViewModel(
     val isMusicEnabled: StateFlow<Boolean> = settingsManager.isMusicEnabledFlow
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubsided(5000),
+            started = SharingStarted.WhileSubscribed(5000),
             initialValue = true
         )
     fun setMusicEnabled(isEnabled: Boolean) {
@@ -113,7 +113,7 @@ class SettingsViewModel(
     val isTtsEnabled: StateFlow<Boolean> = settingsManager.isTtsEnabledFlow
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubsided(5000),
+            started = SharingStarted.WhileSubscribed(5000),
             initialValue = true
         )
     fun setTtsEnabled(isEnabled: Boolean) {
