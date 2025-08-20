@@ -53,6 +53,7 @@ fun OptionsScreen(
     val isDarkMode by settingsViewModel.isDarkModeEnabled.collectAsState(initial = isSystemInDarkTheme())
     val isMusicEnabled by settingsViewModel.isMusicEnabled.collectAsState()
     val isTtsEnabled by settingsViewModel.isTtsEnabled.collectAsState()
+    val playerName by settingsViewModel.playerName.collectAsState()
 
     val classicSongs = remember {
         listOf(
@@ -85,6 +86,22 @@ fun OptionsScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            item {
+                Text(
+                    text = "Nome Giocatore",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                OutlinedTextField(
+                    value = playerName,
+                    onValueChange = { settingsViewModel.setPlayerName(it) },
+                    label = { Text("Il tuo nome") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            item { Divider(modifier = Modifier.padding(vertical = 16.dp)) }
+
             // Section for Team Style
             item {
                 Text(

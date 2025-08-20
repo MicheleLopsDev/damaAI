@@ -125,6 +125,18 @@ class SettingsViewModel(
         }
     }
 
+    val playerName: StateFlow<String> = settingsManager.playerNameFlow
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = "Giocatore"
+        )
+    fun setPlayerName(name: String) {
+        viewModelScope.launch {
+            settingsManager.setPlayerName(name)
+        }
+    }
+
     override fun onCleared() {
         super.onCleared()
         musicManager.release()

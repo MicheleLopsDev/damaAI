@@ -38,12 +38,17 @@ private data class Confetti(
 @Composable
 fun VictoryScreen(
     winner: Colore,
+    playerName: String,
     opponentName: String?,      // Accetta un nome nullable
     finalComment: String?,      // Accetta un commento nullable
     onPlayAgain: () -> Unit
 ) {
     var screenVisible by remember { mutableStateOf(false) }
-    val winnerText = if (winner == Colore.BIANCO) "Hai Vinto!" else "Ha Vinto l'IA"
+    val winnerText = when {
+        winner == Colore.BIANCO -> "Vince $playerName!"
+        opponentName != null -> "Vince $opponentName!"
+        else -> "Ha vinto l'IA!"
+    }
 
     val screenAlpha by animateFloatAsState(
         targetValue = if (screenVisible) 1f else 0f,

@@ -32,6 +32,7 @@ class SettingsManager(private val context: Context) {
 
         val IS_MUSIC_ENABLED = booleanPreferencesKey("is_music_enabled")
         val IS_TTS_ENABLED = booleanPreferencesKey("is_tts_enabled")
+        val PLAYER_NAME = stringPreferencesKey("player_name")
     }
 
     // --- Gestione Tema Scuro (invariata) ---
@@ -126,6 +127,17 @@ class SettingsManager(private val context: Context) {
     suspend fun setTtsEnabled(isEnabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[IS_TTS_ENABLED] = isEnabled
+        }
+    }
+
+    val playerNameFlow: Flow<String> = context.dataStore.data
+        .map { preferences ->
+            preferences[PLAYER_NAME] ?: "Giocatore"
+        }
+
+    suspend fun setPlayerName(name: String) {
+        context.dataStore.edit { preferences ->
+            preferences[PLAYER_NAME] = name
         }
     }
 }

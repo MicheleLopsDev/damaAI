@@ -204,6 +204,7 @@ fun GameScreen(
     val classicSongId by settingsViewModel.classicSongId.collectAsState()
     val teamStyleId by settingsViewModel.playerTeamStyleId.collectAsState()
     val isGlobalMuteOn by settingsViewModel.isGlobalMuteOn.collectAsState()
+    val playerName by settingsViewModel.playerName.collectAsState()
 
     var gameState by remember { mutableStateOf(GameState(pieces = emptyList())) }
     var selectedPieceCoords by remember { mutableStateOf<Posizione?>(null) }
@@ -403,7 +404,13 @@ fun GameScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("damaAI") },
+                title = {
+                    if (playerName.isNotBlank()) {
+                        Text("damaAI: partita di $playerName")
+                    } else {
+                        Text("damaAI")
+                    }
+                },
                 actions = {
                     IconButton(onClick = {
                         settingsViewModel.toggleGlobalMute()
@@ -587,6 +594,7 @@ fun GameScreen(
                         winner?.let { vincitore ->
                             VictoryScreen(
                                 winner = vincitore,
+                                playerName = playerName,
                                 opponentName = aiOpponent?.name,
                                 finalComment = finalAiComment,
                                 onPlayAgain = {
