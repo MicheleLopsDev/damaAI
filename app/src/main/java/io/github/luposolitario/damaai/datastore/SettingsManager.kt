@@ -1,143 +1,117 @@
 package io.github.luposolitario.damaai.datastore
 
 import android.content.Context
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.booleanPreferencesKey
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.floatPreferencesKey
-import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
-import android.util.Log
+import android.content.SharedPreferences
 import io.github.luposolitario.damaai.game_logic.Difficolta
-
-private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 class SettingsManager(private val context: Context) {
 
+    private val sharedPreferences: SharedPreferences = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
+
     companion object {
-        val IS_DARK_MODE_ENABLED = booleanPreferencesKey("dark_mode_enabled")
-        val PLAYER_TEAM_STYLE_ID = stringPreferencesKey("player_team_style_id")
-
-        // --- NUOVA CHIAVE PER LO STILE DELLA SCACCHIERA ---
-        val BOARD_STYLE_ID = stringPreferencesKey("board_style_id")
-        // --- NUOVA CHIAVE PER LA DIFFICOLTÀ ---
-        val DIFFICULTY_LEVEL = stringPreferencesKey("difficulty_level")
-
-        // --- NUOVE CHIAVI PER LA MUSICA ---
-        val MUSIC_VOLUME = floatPreferencesKey("music_volume")
-        val CLASSIC_SONG_ID = stringPreferencesKey("classic_song_id")
-
-        val IS_MUSIC_ENABLED = booleanPreferencesKey("is_music_enabled")
-        val IS_TTS_ENABLED = booleanPreferencesKey("is_tts_enabled")
-        val PLAYER_NAME = stringPreferencesKey("player_name")
+        const val IS_DARK_MODE_ENABLED = "dark_mode_enabled"
+        const val PLAYER_TEAM_STYLE_ID = "player_team_style_id"
+        const val BOARD_STYLE_ID = "board_style_id"
+        const val DIFFICULTY_LEVEL = "difficulty_level"
+        const val MUSIC_VOLUME = "music_volume"
+        const val CLASSIC_SONG_ID = "classic_song_id"
+        const val IS_MUSIC_ENABLED = "is_music_enabled"
+        const val IS_TTS_ENABLED = "is_tts_enabled"
+        const val PLAYER_NAME = "player_name"
     }
 
-    // --- Gestione Tema Scuro (invariata) ---
-    val isDarkModeEnabledFlow: Flow<Boolean> = context.dataStore.data.map { it[IS_DARK_MODE_ENABLED] ?: false }
-    suspend fun setDarkMode(isEnabled: Boolean) {
-        context.dataStore.edit {
-            it[IS_DARK_MODE_ENABLED] = isEnabled
-        }
-    }
+    private val _isDarkModeEnabledFlow = MutableStateFlow(false)
+    val isDarkModeEnabledFlow: StateFlow<Boolean> = _isDarkModeEnabledFlow.asStateFlow()
 
-    // --- Gestione Stile Pedine (invariata) ---
-    val playerTeamStyleIdFlow: Flow<String> = context.dataStore.data.map { it[PLAYER_TEAM_STYLE_ID] ?: "default" }
-    suspend fun setPlayerTeamStyle(styleId: String) {
-        context.dataStore.edit { it[PLAYER_TEAM_STYLE_ID] = styleId }
-    }
+    private val _playerTeamStyleIdFlow = MutableStateFlow("default")
+    val playerTeamStyleIdFlow: StateFlow<String> = _playerTeamStyleIdFlow.asStateFlow()
 
-    // --- NUOVO: Flow per leggere lo stile della scacchiera ---
-    val boardStyleIdFlow: Flow<String> = context.dataStore.data
-        .map { preferences ->
-            // Leggiamo l'ID dello stile. Se non esiste, usiamo "wood" come valore iniziale.
-            preferences[BOARD_STYLE_ID] ?: "wood"
-        }
+    private val _boardStyleIdFlow = MutableStateFlow("wood")
+    val boardStyleIdFlow: StateFlow<String> = _boardStyleIdFlow.asStateFlow()
 
-    // --- NUOVO: Funzione per salvare lo stile della scacchiera ---
-    suspend fun setBoardStyle(styleId: String) {
-        context.dataStore.edit { preferences ->
-            preferences[BOARD_STYLE_ID] = styleId
-        }
-    }
+    private val _difficultyLevelFlow = MutableStateFlow(Difficolta.ESPERTO.name)
+    val difficultyLevelFlow: StateFlow<String> = _difficultyLevelFlow.asStateFlow()
 
-    // --- NUOVO: Flow per leggere la difficoltà ---
-    val difficultyLevelFlow: Flow<String> = context.dataStore.data
-        .map { preferences ->
-            // Se non c'è un valore salvato, usiamo "FACILE" come default.
-            val difficulty = preferences[DIFFICULTY_LEVEL] ?: Difficolta.ESPERTO.name
-            Log.d("SettingsDebug", "DataStore ha letto la difficoltà: $difficulty") // <-- AGGIUNGI QUESTO LOG
-            difficulty
-        }
+    private val _musicVolumeFlow = MutableStateFlow(0.05f)
+    val musicVolumeFlow: StateFlow<Float> = _musicVolumeFlow.asStateFlow()
 
-    // --- NUOVO: Funzione per salvare la difficoltà ---
-    suspend fun setDifficultyLevel(level: String) {
-        context.dataStore.edit { preferences ->
-            preferences[DIFFICULTY_LEVEL] = level
+    private val _classicSongIdFlow = MutableStateFlow("classic_1")
+    val classicSongIdFlow: StateFlow<String> = _classicSongIdFlow.asStateFlow()
+
+    private val _isMusicEnabledFlow = MutableStateFlow(true)
+    val isMusicEnabledFlow: StateFlow<Boolean> = _isMusicEnabledFlow.asStateFlow()
+
+    private val _isTtsEnabledFlow = MutableStateFlow(true)
+    val isTtsEnabledFlow: StateFlow<Boolean> = _isTtsEnabledFlow.asStateFlow()
+
+    private val _playerNameFlow = MutableStateFlow("Giocatore")
+    val playerNameFlow: StateFlow<String> = _playerNameFlow.asStateFlow()
+
+    private val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        when (key) {
+            IS_DARK_MODE_ENABLED -> _isDarkModeEnabledFlow.value = sharedPreferences.getBoolean(IS_DARK_MODE_ENABLED, false)
+            PLAYER_TEAM_STYLE_ID -> _playerTeamStyleIdFlow.value = sharedPreferences.getString(PLAYER_TEAM_STYLE_ID, "default") ?: "default"
+            BOARD_STYLE_ID -> _boardStyleIdFlow.value = sharedPreferences.getString(BOARD_STYLE_ID, "wood") ?: "wood"
+            DIFFICULTY_LEVEL -> _difficultyLevelFlow.value = sharedPreferences.getString(DIFFICULTY_LEVEL, Difficolta.ESPERTO.name) ?: Difficolta.ESPERTO.name
+            MUSIC_VOLUME -> _musicVolumeFlow.value = sharedPreferences.getFloat(MUSIC_VOLUME, 0.05f)
+            CLASSIC_SONG_ID -> _classicSongIdFlow.value = sharedPreferences.getString(CLASSIC_SONG_ID, "classic_1") ?: "classic_1"
+            IS_MUSIC_ENABLED -> _isMusicEnabledFlow.value = sharedPreferences.getBoolean(IS_MUSIC_ENABLED, true)
+            IS_TTS_ENABLED -> _isTtsEnabledFlow.value = sharedPreferences.getBoolean(IS_TTS_ENABLED, true)
+            PLAYER_NAME -> _playerNameFlow.value = sharedPreferences.getString(PLAYER_NAME, "Giocatore") ?: "Giocatore"
         }
     }
 
-    // --- NUOVO: Flow per leggere il volume della musica ---
-    val musicVolumeFlow: Flow<Float> = context.dataStore.data
-        .map { preferences ->
-            // Se non c'è un valore salvato, usiamo 0.5f come default.
-            preferences[MUSIC_VOLUME] ?: 0.05f
-        }
+    init {
+        // Load initial values
+        _isDarkModeEnabledFlow.value = sharedPreferences.getBoolean(IS_DARK_MODE_ENABLED, false)
+        _playerTeamStyleIdFlow.value = sharedPreferences.getString(PLAYER_TEAM_STYLE_ID, "default") ?: "default"
+        _boardStyleIdFlow.value = sharedPreferences.getString(BOARD_STYLE_ID, "wood") ?: "wood"
+        _difficultyLevelFlow.value = sharedPreferences.getString(DIFFICULTY_LEVEL, Difficolta.ESPERTO.name) ?: Difficolta.ESPERTO.name
+        _musicVolumeFlow.value = sharedPreferences.getFloat(MUSIC_VOLUME, 0.05f)
+        _classicSongIdFlow.value = sharedPreferences.getString(CLASSIC_SONG_ID, "classic_1") ?: "classic_1"
+        _isMusicEnabledFlow.value = sharedPreferences.getBoolean(IS_MUSIC_ENABLED, true)
+        _isTtsEnabledFlow.value = sharedPreferences.getBoolean(IS_TTS_ENABLED, true)
+        _playerNameFlow.value = sharedPreferences.getString(PLAYER_NAME, "Giocatore") ?: "Giocatore"
 
-    // --- NUOVO: Funzione per salvare il volume della musica ---
-    suspend fun setMusicVolume(volume: Float) {
-        context.dataStore.edit { preferences ->
-            preferences[MUSIC_VOLUME] = volume
-        }
+        sharedPreferences.registerOnSharedPreferenceChangeListener(listener)
     }
 
-    // --- NUOVO: Flow per leggere la canzone classica selezionata ---
-    val classicSongIdFlow: Flow<String> = context.dataStore.data
-        .map { preferences ->
-            // Se non c'è un valore salvato, usiamo "classic_1" come default.
-            preferences[CLASSIC_SONG_ID] ?: "classic_1"
-        }
-
-    // --- NUOVO: Funzione per salvare la canzone classica selezionata ---
-    suspend fun setClassicSongId(songId: String) {
-        context.dataStore.edit { preferences ->
-            preferences[CLASSIC_SONG_ID] = songId
-        }
+    fun setDarkMode(isEnabled: Boolean) {
+        sharedPreferences.edit().putBoolean(IS_DARK_MODE_ENABLED, isEnabled).apply()
     }
 
-    // AGGIUNGI SOLO QUESTO FLUSSO E QUESTA FUNZIONE ALLA FINE DELLA CLASSE
-    val isMusicEnabledFlow: Flow<Boolean> = context.dataStore.data
-        .map { preferences ->
-            preferences[IS_MUSIC_ENABLED] ?: true // Abilitata di default
-        }
-
-    suspend fun setMusicEnabled(isEnabled: Boolean) {
-        context.dataStore.edit { preferences ->
-            preferences[IS_MUSIC_ENABLED] = isEnabled
-        }
+    fun setPlayerTeamStyle(styleId: String) {
+        sharedPreferences.edit().putString(PLAYER_TEAM_STYLE_ID, styleId).apply()
     }
 
-    val isTtsEnabledFlow: Flow<Boolean> = context.dataStore.data
-        .map { preferences ->
-            preferences[IS_TTS_ENABLED] ?: true // Abilitata di default
-        }
-
-    suspend fun setTtsEnabled(isEnabled: Boolean) {
-        context.dataStore.edit { preferences ->
-            preferences[IS_TTS_ENABLED] = isEnabled
-        }
+    fun setBoardStyle(styleId: String) {
+        sharedPreferences.edit().putString(BOARD_STYLE_ID, styleId).apply()
     }
 
-    val playerNameFlow: Flow<String> = context.dataStore.data
-        .map { preferences ->
-            preferences[PLAYER_NAME] ?: "Giocatore"
-        }
+    fun setDifficultyLevel(level: String) {
+        sharedPreferences.edit().putString(DIFFICULTY_LEVEL, level).apply()
+    }
 
-    suspend fun setPlayerName(name: String) {
-        context.dataStore.edit { preferences ->
-            preferences[PLAYER_NAME] = name
-        }
+    fun setMusicVolume(volume: Float) {
+        sharedPreferences.edit().putFloat(MUSIC_VOLUME, volume).apply()
+    }
+
+    fun setClassicSongId(songId: String) {
+        sharedPreferences.edit().putString(CLASSIC_SONG_ID, songId).apply()
+    }
+
+    fun setMusicEnabled(isEnabled: Boolean) {
+        sharedPreferences.edit().putBoolean(IS_MUSIC_ENABLED, isEnabled).apply()
+    }
+
+    fun setTtsEnabled(isEnabled: Boolean) {
+        sharedPreferences.edit().putBoolean(IS_TTS_ENABLED, isEnabled).apply()
+    }
+
+    fun setPlayerName(name: String) {
+        sharedPreferences.edit().putString(PLAYER_NAME, name).apply()
     }
 }

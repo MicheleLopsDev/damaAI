@@ -16,7 +16,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 
 class SettingsViewModel(
     application: Application,
@@ -38,15 +37,13 @@ class SettingsViewModel(
     val isDarkModeEnabled: StateFlow<Boolean> = settingsManager.isDarkModeEnabledFlow
         .stateIn(scope = viewModelScope, started = SharingStarted.WhileSubscribed(5000), initialValue = false)
     fun setDarkMode(isEnabled: Boolean) {
-        viewModelScope.launch {
-            settingsManager.setDarkMode(isEnabled)
-        }
+        settingsManager.setDarkMode(isEnabled)
     }
 
-    val playerTeamStyleId: StateFlow<String?> = settingsManager.playerTeamStyleIdFlow
-        .stateIn(scope = viewModelScope, started = SharingStarted.WhileSubscribed(5000), initialValue = null)
+    val playerTeamStyleId: StateFlow<String> = settingsManager.playerTeamStyleIdFlow
+        .stateIn(scope = viewModelScope, started = SharingStarted.WhileSubscribed(5000), initialValue = "default")
     fun setPlayerTeamStyle(styleId: String) {
-        viewModelScope.launch { settingsManager.setPlayerTeamStyle(styleId) }
+        settingsManager.setPlayerTeamStyle(styleId)
     }
 
     val boardStyleId: StateFlow<String> = settingsManager.boardStyleIdFlow
@@ -56,24 +53,17 @@ class SettingsViewModel(
             initialValue = "wood"
         )
     fun setBoardStyle(styleId: String) {
-        viewModelScope.launch {
-            settingsManager.setBoardStyle(styleId)
-        }
+        settingsManager.setBoardStyle(styleId)
     }
 
-    // --- MODIFICA QUI ---
-    // Il valore iniziale ora è null per rappresentare lo stato di "caricamento".
-    // Il tipo diventa nullabile (String?).
-    val difficultyLevel: StateFlow<String?> = settingsManager.difficultyLevelFlow
+    val difficultyLevel: StateFlow<String> = settingsManager.difficultyLevelFlow
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue =  null
+            initialValue =  Difficolta.ESPERTO.name
         )
     fun setDifficultyLevel(level: String) {
-        viewModelScope.launch {
-            settingsManager.setDifficultyLevel(level)
-        }
+        settingsManager.setDifficultyLevel(level)
     }
 
     val musicVolume: StateFlow<Float> = settingsManager.musicVolumeFlow
@@ -83,9 +73,7 @@ class SettingsViewModel(
             initialValue = 0.05f
         )
     fun setMusicVolume(volume: Float) {
-        viewModelScope.launch {
-            settingsManager.setMusicVolume(volume)
-        }
+        settingsManager.setMusicVolume(volume)
     }
 
     val classicSongId: StateFlow<String> = settingsManager.classicSongIdFlow
@@ -95,10 +83,8 @@ class SettingsViewModel(
             initialValue = "classic_1"
         )
     fun setClassicSongId(songId: String) {
-        viewModelScope.launch {
-            Log.d("MusicDebug", "SALVATAGGIO: L'utente ha selezionato la canzone con ID: $songId")
-            settingsManager.setClassicSongId(songId)
-        }
+        Log.d("MusicDebug", "SALVATAGGIO: L'utente ha selezionato la canzone con ID: $songId")
+        settingsManager.setClassicSongId(songId)
     }
 
     val isMusicEnabled: StateFlow<Boolean> = settingsManager.isMusicEnabledFlow
@@ -108,9 +94,7 @@ class SettingsViewModel(
             initialValue = true
         )
     fun setMusicEnabled(isEnabled: Boolean) {
-        viewModelScope.launch {
-            settingsManager.setMusicEnabled(isEnabled)
-        }
+        settingsManager.setMusicEnabled(isEnabled)
     }
 
     val isTtsEnabled: StateFlow<Boolean> = settingsManager.isTtsEnabledFlow
@@ -120,9 +104,7 @@ class SettingsViewModel(
             initialValue = true
         )
     fun setTtsEnabled(isEnabled: Boolean) {
-        viewModelScope.launch {
-            settingsManager.setTtsEnabled(isEnabled)
-        }
+        settingsManager.setTtsEnabled(isEnabled)
     }
 
     val playerName: StateFlow<String> = settingsManager.playerNameFlow
@@ -132,9 +114,7 @@ class SettingsViewModel(
             initialValue = "Giocatore"
         )
     fun setPlayerName(name: String) {
-        viewModelScope.launch {
-            settingsManager.setPlayerName(name)
-        }
+        settingsManager.setPlayerName(name)
     }
 
     override fun onCleared() {
