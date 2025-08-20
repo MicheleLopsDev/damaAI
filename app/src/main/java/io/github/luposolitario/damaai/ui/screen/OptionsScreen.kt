@@ -35,7 +35,6 @@ import androidx.navigation.NavController
 import io.github.luposolitario.damaai.data.availableOpponents
 import io.github.luposolitario.damaai.data.availableTeamStyles
 import io.github.luposolitario.damaai.game_logic.Difficolta
-import io.github.luposolitario.damaai.media.MusicManager
 import io.github.luposolitario.damaai.utils.getTrackIdByName
 import io.github.luposolitario.damaai.viewmodels.SettingsViewModel
 import kotlin.math.roundToInt
@@ -53,6 +52,7 @@ fun OptionsScreen(
     val selectedClassicSongId by settingsViewModel.classicSongId.collectAsState()
     val isDarkMode by settingsViewModel.isDarkModeEnabled.collectAsState(initial = isSystemInDarkTheme())
     val isMusicEnabled by settingsViewModel.isMusicEnabled.collectAsState()
+    val isTtsEnabled by settingsViewModel.isTtsEnabled.collectAsState()
 
     val classicSongs = remember {
         listOf(
@@ -67,7 +67,7 @@ fun OptionsScreen(
     // Stop music when leaving the screen
     DisposableEffect(Unit) {
         onDispose {
-            MusicManager.stop()
+            settingsViewModel.musicManager.stop()
         }
     }
 
@@ -112,12 +112,12 @@ fun OptionsScreen(
                             settingsViewModel.setPlayerTeamStyle(style.id)
                             if (style.id != "default") {
                                 getTrackIdByName(style.id)?.let { trackId ->
-                                    MusicManager.play(context, trackId, isMusicEnabled)
+                                    settingsViewModel.musicManager.play(trackId)
                                 }
                             } else {
                                 // If classic is selected, play the currently selected classic song
                                 getTrackIdByName(selectedClassicSongId)?.let { trackId ->
-                                    MusicManager.play(context, trackId, isMusicEnabled)
+                                    settingsViewModel.musicManager.play(trackId)
                                 }
                             }
                         }
@@ -158,12 +158,12 @@ fun OptionsScreen(
                 }
             }
 
-            item {  // --- 2. AGGIUNGIAMO IL NUOVO SWITCH QUI ---
-//                Text(
-//                    "Musica e Suoni",
-//                    style = MaterialTheme.typography.titleMedium,
-//                    modifier = Modifier.padding(bottom = 8.dp)
-//                )
+            item {
+                Text(
+                    "Musica e Suoni",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -174,6 +174,19 @@ fun OptionsScreen(
                     Switch(
                         checked = isMusicEnabled,
                         onCheckedChange = { settingsViewModel.setMusicEnabled(it) }
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Sintesi Vocale (TTS)")
+                    Switch(
+                        checked = isTtsEnabled,
+                        onCheckedChange = { settingsViewModel.setTtsEnabled(it) }
                     )
                 }
                 Spacer(modifier = Modifier.height(8.dp))
@@ -190,24 +203,20 @@ fun OptionsScreen(
 
                     Text("Volume", style = MaterialTheme.typography.bodyLarge)
 
-                    // --- NUOVO CONTROLLO VOLUME ---
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         val volumePercentage = (musicVolume * 100).roundToInt()
 
-                        // Pulsante Meno
                         IconButton(onClick = {
                             val newPercentage = (volumePercentage - 1).coerceIn(0, 100)
                             val newVolume = newPercentage / 100f
                             settingsViewModel.setMusicVolume(newVolume)
-                            MusicManager.setVolume(newVolume)
                         }) {
                             Icon(Icons.Default.Remove, contentDescription = "Diminuisci volume")
                         }
 
-                        // Testo Percentuale
                         Text(
                             text = "$volumePercentage%",
                             style = MaterialTheme.typography.bodyLarge.copy(
@@ -218,12 +227,10 @@ fun OptionsScreen(
                             textAlign = TextAlign.Center
                         )
 
-                        // Pulsante Più
                         IconButton(onClick = {
                             val newPercentage = (volumePercentage + 1).coerceIn(0, 100)
                             val newVolume = newPercentage / 100f
                             settingsViewModel.setMusicVolume(newVolume)
-                            MusicManager.setVolume(newVolume)
                         }) {
                             Icon(Icons.Default.Add, contentDescription = "Aumenta volume")
                         }
@@ -264,7 +271,7 @@ fun OptionsScreen(
                                         settingsViewModel.setClassicSongId(id)
                                         isDropdownExpanded = false
                                         getTrackIdByName(id)?.let { trackId ->
-                                            MusicManager.play(context, trackId, isMusicEnabled)
+                                            settingsViewModel.musicManager.play(trackId)
                                         }
                                     }
                                 )

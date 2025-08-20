@@ -51,8 +51,6 @@ import io.github.luposolitario.damaai.engine.GemmaEngine
 import io.github.luposolitario.damaai.game_logic.Colore
 import io.github.luposolitario.damaai.game_logic.Difficolta
 import io.github.luposolitario.damaai.game_logic.Posizione
-import io.github.luposolitario.damaai.media.MusicManager
-import io.github.luposolitario.damaai.media.TtsManager
 import io.github.luposolitario.damaai.screen.*
 import io.github.luposolitario.damaai.ui.screen.HelpScreen
 import io.github.luposolitario.damaai.ui.screen.OptionsScreen
@@ -71,11 +69,10 @@ import java.io.FileOutputStream
 class GameActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        TtsManager.initialize(this)
         setContent {
             val application = application as DamaAIApplication
             val settingsViewModel: SettingsViewModel = viewModel(
-                factory = SettingsViewModelFactory(application.settingsManager)
+                factory = SettingsViewModelFactory(application, application.settingsManager)
             )
             val useDarkTheme by settingsViewModel.isDarkModeEnabled.collectAsState(initial = isSystemInDarkTheme())
 
@@ -83,12 +80,6 @@ class GameActivity : ComponentActivity() {
                 AppNavigation(settingsViewModel = settingsViewModel)
             }
         }
-    }
-
-    // --- SOLUZIONE: Spegni il TTS quando l'Activity viene distrutta ---
-    override fun onDestroy() {
-        super.onDestroy()
-        TtsManager.shutdown()
     }
 }
 
@@ -209,9 +200,9 @@ fun GameScreen(
     val context = LocalView.current.context
     val view = LocalView.current
 
-    val musicVolume by settingsViewModel.musicVolume.collectAsState()
     val classicSongId by settingsViewModel.classicSongId.collectAsState()
     val teamStyleId by settingsViewModel.playerTeamStyleId.collectAsState()
+    val isGlobalMuteOn by settingsViewModel.isGlobalMuteOn.collectAsState()
 
     var gameState by remember { mutableStateOf(GameState(pieces = emptyList())) }
     var selectedPieceCoords by remember { mutableStateOf<Posizione?>(null) }
@@ -229,11 +220,6 @@ fun GameScreen(
     val gemmaEngine = remember { GemmaEngine() }
 
     val selectedDifficulty by settingsViewModel.difficultyLevel.collectAsState()
-    val isMusicEnabled by settingsViewModel.isMusicEnabled.collectAsState()
-    // Stato locale per l'icona del muto, inizializzato con lo stato del MusicManager
-    var isMuted by remember { mutableStateOf(MusicManager.isMuted) }
-
-    MusicManager.setEnabled(isMusicEnabled)
 
     val aiOpponent: AiOpponent? = remember(playerTeamStyle.id) {
         availableOpponents.find {
@@ -268,10 +254,8 @@ fun GameScreen(
                         isAiThinking = false
                         if (llmChatMessages.isNotEmpty()) {
                             Log.d("LlmChatLog", "Generation complete. Final message: ${llmChatMessages.last()}")
-                            // ==== AGGIUNTA QUI ====
-                            // Pulisce il nome del bot e fa parlare il TTS con il messaggio completo
                             val textToSpeak = llmChatMessages.last().substringAfter(":").trim().replace("\"", "")
-                            TtsManager.speak(textToSpeak,aiOpponent.gender)
+                            settingsViewModel.ttsManager.speak(textToSpeak, aiOpponent.gender)
                         }
                     }
                     .collect { partialResponse ->
@@ -310,7 +294,7 @@ fun GameScreen(
                     val piecesAfterMove = parseBoardState(damaEngine.getStatoScacchiera())
                     gameState = gameState.copy(
                         pieces = piecesAfterMove,
-                        mandatoryCapturePieces = emptyList() // Il cerchio scompare subito!
+                        mandatoryCapturePieces = emptyList()
                     )
                     if (pedinaCatturata != null) {
                         coroutineScope.launch {
@@ -346,8 +330,7 @@ fun GameScreen(
         validMoveDestinations = movesForPiece
     }
 
-    LaunchedEffect(teamStyleId, classicSongId,isMusicEnabled) {
-        MusicManager.setVolume(musicVolume)
+    LaunchedEffect(teamStyleId, classicSongId) {
         val songToPlayId = if (teamStyleId == "default") {
             classicSongId
         } else {
@@ -355,11 +338,7 @@ fun GameScreen(
         }
 
         getTrackIdByName(songToPlayId)?.let { trackId ->
-
-            Log.d("GameDebug", "isMusicEnabled: $isMusicEnabled")
-
-            MusicManager.setVolume(musicVolume)
-            MusicManager.play(context, trackId,isMusicEnabled)
+            settingsViewModel.musicManager.play(trackId)
         }
     }
 
@@ -400,8 +379,6 @@ fun GameScreen(
     DisposableEffect(Unit) {
         onDispose {
             coroutineScope.launch { gemmaEngine.unload() }
-            MusicManager.stop()
-            TtsManager.shutdown()
         }
     }
 
@@ -410,13 +387,12 @@ fun GameScreen(
             TopAppBar(
                 title = { Text("damaAI") },
                 actions = {
-                    // --- NUOVO PULSANTE MUTE ---
                     IconButton(onClick = {
-                        isMuted = MusicManager.toggleMute()
+                        settingsViewModel.toggleGlobalMute()
                     }) {
                         Icon(
-                            imageVector = if (isMuted) Icons.Filled.VolumeOff else Icons.Filled.VolumeUp,
-                            contentDescription = if (isMuted) "Riattiva audio" else "Muto"
+                            imageVector = if (isGlobalMuteOn) Icons.Filled.VolumeOff else Icons.Filled.VolumeUp,
+                            contentDescription = if (isGlobalMuteOn) "Riattiva audio" else "Muto"
                         )
                     }
                     IconButton(onClick = {
@@ -539,20 +515,13 @@ fun GameScreen(
 
                                                 if (aiOpponent != null && damaEngine.getVincitore() == null) {
 
-                                                    // --- INIZIO MODIFICA CRUCIALE ---
-
-                                                    // 1. Attiviamo l'indicatore "Sta pensando..."
                                                     isAiThinking = true
 
-                                                    // 2. Spostiamo il calcolo pesante su un thread in background (Dispatchers.Default)
                                                     val mossaIA = withContext(Dispatchers.Default) {
                                                         damaEngine.faiMossaIA()
                                                     }
 
-                                                    // 3. Una volta ottenuta la mossa, torniamo sul thread principale e aggiorniamo la UI
                                                     isAiThinking = false
-
-                                                    // --- FINE MODIFICA CRUCIALE ---
 
                                                     Log.d("GameScreen_Debug", "Risultato di damaEngine.faiMossaIA(): $mossaIA")
 
@@ -698,10 +667,8 @@ fun AIOpponentHeader(name: String,imageResId: Int, isThinking: Boolean,turnoCorr
     ) {
 
         val borderModifier = if (turnoCorrente == Colore.NERO) {
-            // Applica un bordo nero e spesso quando è il turno dell'IA (Nero)
             Modifier.border(3.dp, Color.Red, CircleShape)
         } else {
-            // Nessun bordo quando non è il suo turno
             Modifier
         }
 
@@ -710,7 +677,7 @@ fun AIOpponentHeader(name: String,imageResId: Int, isThinking: Boolean,turnoCorr
             contentDescription = "Avatar dell'avversario AI",
             modifier = Modifier
                 .size(80.dp)
-                .then(borderModifier) // <<-- 2. APPLICA IL MODIFIER QUI
+                .then(borderModifier)
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         )
@@ -734,11 +701,6 @@ fun ChatDisplayArea(
 ) {
     val listState = rememberLazyListState()
 
-    // ===============================================================
-    // ==== FIX: SCROLL AUTOMATICO DISABILITATO ====
-    // Ho commentato il LaunchedEffect per darti il pieno
-    // controllo manuale dello scroll, come richiesto.
-    // ===============================================================
     /*
     LaunchedEffect(messages.size, messages.lastOrNull()) {
         if (messages.isNotEmpty()) {

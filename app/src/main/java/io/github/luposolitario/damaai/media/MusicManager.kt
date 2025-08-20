@@ -3,80 +3,75 @@ package io.github.luposolitario.damaai.media
 import android.content.Context
 import android.media.MediaPlayer
 import androidx.annotation.RawRes
+import io.github.luposolitario.damaai.datastore.SettingsManager
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.launch
 
-object MusicManager {
+class MusicManager(
+    private val context: Context,
+    settingsManager: SettingsManager,
+    externalScope: CoroutineScope
+) {
 
     private var mediaPlayer: MediaPlayer? = null
-    private val musicScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    private var currentVolume: Float = 0.5f
+    private var isMusicEnabled: Boolean = true
+    private var isGloballyMuted: Boolean = false
 
-    private var currentVolume: Float = 0.5f // Default volume
+    init {
+        externalScope.launch {
+            combine(
+                settingsManager.musicVolumeFlow,
+                settingsManager.isMusicEnabledFlow
+            ) { volume, isEnabled ->
+                currentVolume = volume
+                isMusicEnabled = isEnabled
+                if (!isEnabled) {
+                    stop()
+                } else {
+                    updateVolume()
+                }
+            }.collect {} // Terminal operator to start the flow collection
+        }
+    }
 
-    private var appContext: Context? = null
-    private var isInitialized = false
-
-    var isMuted: Boolean = false
-        private set // Leggibile pubblicamente, ma modificabile solo dall'interno
-
-    fun play(context: Context, @RawRes trackId: Int, isMusicEnabled: Boolean) {
-        // Controlla sempre che tutto sia pronto prima di agire
-        if (isMusicEnabled) {
-            if (!isInitialized) return
-            // Stop and release any existing player
+    fun play(@RawRes trackId: Int) {
+        if (!isMusicEnabled) {
             stop()
+            return
+        }
 
-            // Create a new media player instance
-            mediaPlayer = MediaPlayer.create(context, trackId).apply {
-                isLooping = true // Loop the music
-                val volumeToApply = if (isMuted) 0f else currentVolume
-                setVolume(volumeToApply, volumeToApply)
-                start()
-            }
-        } else {
-            stop()
+        stop()
+
+        mediaPlayer = MediaPlayer.create(context, trackId).apply {
+            isLooping = true
+            updateVolume()
+            start()
         }
     }
 
     fun stop() {
-        if (mediaPlayer?.isPlaying == true) {
-            mediaPlayer?.stop()
+        mediaPlayer?.apply {
+            if (isPlaying) {
+                stop()
+            }
+            release()
         }
-        mediaPlayer?.release()
         mediaPlayer = null
+    }
+
+    fun setGlobalMute(isMuted: Boolean) {
+        isGloballyMuted = isMuted
+        updateVolume()
+    }
+
+    private fun updateVolume() {
+        val volumeToApply = if (isGloballyMuted) 0f else currentVolume
+        mediaPlayer?.setVolume(volumeToApply, volumeToApply)
     }
 
     fun release() {
         stop()
-        musicScope.cancel()
-        isInitialized = false // Permette una reinizializzazione se necessario
     }
-    fun setVolume(volume: Float) {
-        currentVolume = volume
-        // Applica il volume solo se non è attivo il muto
-        if (!isMuted) {
-            mediaPlayer?.setVolume(volume, volume)
-        }
-    }
-
-    /**
-     * Inverte lo stato di muto (on/off) e ritorna il nuovo stato.
-     * @return Il nuovo stato di isMuted (true se muto, false altrimenti).
-     */
-    fun toggleMute(): Boolean {
-        isMuted = !isMuted
-        if (isMuted) {
-            mediaPlayer?.setVolume(0f, 0f)
-        } else {
-            mediaPlayer?.setVolume(currentVolume, currentVolume)
-        }
-        return isMuted
-    }
-
-    fun setEnabled(isEnabled: Boolean) {
-        isInitialized = isEnabled
-    }
-
 }

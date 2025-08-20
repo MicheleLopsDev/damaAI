@@ -1,50 +1,65 @@
 package io.github.luposolitario.damaai.media
 
+import android.content.Context
 import android.speech.tts.TextToSpeech
 import android.speech.tts.Voice
 import android.util.Log
 import io.github.luposolitario.damaai.data.Gender
+import io.github.luposolitario.damaai.datastore.SettingsManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import java.util.LinkedList
 import java.util.Locale
 import java.util.Queue
 
-object TtsManager : TextToSpeech.OnInitListener {
-    private const val TAG = "TTS_DEBUG"
-    private data class SpeechRequest(val text: String, val gender: Gender)
-
-    // --- PROVA QUESTE VOCI ---
-    // Ho fatto un'ipotesi. Se non sono corrette,
-    // sostituisci queste stringhe con altri nomi dalla tua lista log.
-    private const val FEMALE_VOICE_NAME = "it-it-x-kda-network"
-    private const val MALE_VOICE_NAME = "it-it-x-itd-network"
-    // -------------------------
+class TtsManager(
+    private val context: Context,
+    settingsManager: SettingsManager,
+    externalScope: CoroutineScope
+) : TextToSpeech.OnInitListener {
 
     private var tts: TextToSpeech? = null
     private var isReady = false
+    private var isTtsEnabled: Boolean = true
+    private var isGloballyMuted: Boolean = false
+
     private val speechQueue: Queue<SpeechRequest> = LinkedList()
     private var availableVoices: List<Voice> = emptyList()
 
-    fun initialize(context: android.content.Context) {
-        if (tts == null) {
-            tts = TextToSpeech(context.applicationContext, this)
+    private data class SpeechRequest(val text: String, val gender: Gender)
+
+    companion object {
+        private const val TAG = "TTS_DEBUG"
+        private const val FEMALE_VOICE_NAME = "it-it-x-kda-network"
+        private const val MALE_VOICE_NAME = "it-it-x-itd-network"
+    }
+
+    init {
+        tts = TextToSpeech(context.applicationContext, this)
+
+        externalScope.launch {
+            settingsManager.isTtsEnabledFlow.collect { enabled ->
+                isTtsEnabled = enabled
+            }
         }
     }
 
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
             availableVoices = tts?.voices?.toList() ?: emptyList()
-            // Log per vedere tutte le voci (lo lascio per riferimento)
-//            availableVoices.forEach { voice ->
-//                Log.i(TAG, "Voce disponibile: Nome='${voice.name}', Lingua='${voice.locale}'")
-//            }
             isReady = true
             processQueue()
         } else {
-            Log.e(TAG, "Inizializzazione TTS fallita. Status code: $status")
+            Log.e(TAG, "TTS initialization failed. Status code: $status")
         }
     }
 
     fun speak(text: String, gender: Gender) {
+        if (!isTtsEnabled || isGloballyMuted) {
+            return
+        }
+
         if (isReady) {
             setVoiceAndSpeak(text, gender)
         } else {
@@ -52,20 +67,21 @@ object TtsManager : TextToSpeech.OnInitListener {
         }
     }
 
-    private fun setVoiceAndSpeak(text: String, gender: Gender) {
-        // --- LOGICA MODIFICATA ---
-        // Ora cerca il nome esatto specificato nelle costanti.
-        val targetVoiceName = if (gender == Gender.FEMALE) FEMALE_VOICE_NAME else MALE_VOICE_NAME
-        Log.d(TAG, "Cerco la voce con nome esatto: '$targetVoiceName'")
+    fun setGlobalMute(isMuted: Boolean) {
+        isGloballyMuted = isMuted
+        if(isMuted){
+            tts?.stop()
+        }
+    }
 
+    private fun setVoiceAndSpeak(text: String, gender: Gender) {
+        val targetVoiceName = if (gender == Gender.FEMALE) FEMALE_VOICE_NAME else MALE_VOICE_NAME
         val selectedVoice = availableVoices.firstOrNull { it.name == targetVoiceName }
 
         if (selectedVoice != null) {
             tts?.voice = selectedVoice
-            Log.d(TAG, "Voce impostata a: ${selectedVoice.name}")
         } else {
-            Log.w(TAG, "Voce '$targetVoiceName' non trovata! Uso la predefinita per l'italiano.")
-            // Fallback alla prima voce italiana disponibile se quella specificata non esiste
+            Log.w(TAG, "Voice '$targetVoiceName' not found! Using default for Italian.")
             tts?.voice = availableVoices.firstOrNull { it.locale == Locale.ITALIAN }
         }
 
@@ -74,9 +90,8 @@ object TtsManager : TextToSpeech.OnInitListener {
 
     private fun processQueue() {
         while (speechQueue.isNotEmpty()) {
-            val request = speechQueue.poll()
-            if (request != null) {
-                setVoiceAndSpeak(request.text, request.gender)
+            speechQueue.poll()?.let {
+                setVoiceAndSpeak(it.text, it.gender)
             }
         }
     }
