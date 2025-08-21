@@ -244,12 +244,12 @@ fun GameScreen(
         isAiThinking = true
 
         val initialMessage = "${aiOpponent.name}: \"\""
-        Log.d("LlmChatLog", "Adding initial placeholder: $initialMessage")
+
         llmChatMessages = llmChatMessages + initialMessage
 
         coroutineScope.launch {
-            val fullPrompt = "${aiOpponent.chatStylePrompt}\n\n$prompt"
-
+            val fullPrompt = "il tuo avversario si chiama : ${playerName}\n ${aiOpponent.chatStylePrompt}\n\n$prompt"
+            Log.d("LlmChatLog", "fullPrompt: $fullPrompt")
             try {
                 gemmaEngine.generateMove(fullPrompt, damaEngine.getStatoScacchiera())
                     .onCompletion {
