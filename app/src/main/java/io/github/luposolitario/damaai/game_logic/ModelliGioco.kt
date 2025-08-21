@@ -10,6 +10,11 @@ enum class TipoPezzo {
     DAMONE
 }
 
+data class MossaResult(
+    val isSuccess: Boolean,
+    val isTurnoTerminato: Boolean,
+    val mossaEseguita: Mossa? = null
+)
 data class Pezzo(val colore: Colore, val tipo: TipoPezzo = TipoPezzo.PEDINA)
 
 /**
@@ -74,20 +79,28 @@ class MotoreDiGioco() {
     }
 
     // Dentro la classe MotoreDiGioco
-    fun eseguiMossa(mossa: Mossa): Boolean {
+    fun eseguiMossa(mossa: Mossa): MossaResult {
         val mosseValide = mosseValideDisponibili()
         if (!mosseValide.any { it.partenza == mossa.partenza && it.arrivo == mossa.arrivo }) {
-            return false
+            // La mossa non è valida, il turno non cambia.
+            return MossaResult(isSuccess = false, isTurnoTerminato = false)
         }
 
-        val pezzoMosso = scacchiera.pezzoA(mossa.partenza) ?: return false
+        val pezzoMosso = scacchiera.pezzoA(mossa.partenza) ?: return MossaResult(isSuccess = false, isTurnoTerminato = false)
 
-        mossa.posizionePezzoCatturato?.let {
-            scacchiera.rimuoviPezzoA(it)
+        val isCattura = mossa.posizionePezzoCatturato != null
+        if (isCattura) {
+            mossa.posizionePezzoCatturato?.let {
+                scacchiera.rimuoviPezzoA(it)
+            }
         }
+
+        // Esegui la mossa sulla scacchiera
         scacchiera.eseguiMossa(mossa)
 
-        if (mossa.posizionePezzoCatturato != null) {
+        // Logica per determinare se il turno è finito
+        var isTurnoFinito = true
+        if (isCattura) {
             val pezzoDopoMossa = scacchiera.pezzoA(mossa.arrivo) ?: pezzoMosso
             val mossePostCattura = if (pezzoDopoMossa.tipo == TipoPezzo.PEDINA) {
                 trovaMosseDiCatturaPerPedina(mossa.arrivo, pezzoDopoMossa, scacchiera)
@@ -95,16 +108,20 @@ class MotoreDiGioco() {
                 trovaMosseDiCatturaPerDamone(mossa.arrivo, pezzoDopoMossa, scacchiera)
             }
 
-            if (mossePostCattura.isEmpty()) {
-                cambiaTurno()
+            if (mossePostCattura.isNotEmpty()) {
+                isTurnoFinito = false
             }
-        } else {
+        }
+
+        // Cambia il turno solo se è effettivamente terminato
+        if (isTurnoFinito) {
             cambiaTurno()
         }
 
+        // Aggiorna l'hash Zobrist alla fine di ogni "turno completo"
         scacchiera.zobristHash = ZobristHashing.computeHash(scacchiera, turnoCorrente)
 
-        return true
+        return MossaResult(isSuccess = true, isTurnoTerminato = isTurnoFinito, mossaEseguita = mossa)
     }
 
     fun getPezziConCatturaObbligatoria(): List<Posizione> {

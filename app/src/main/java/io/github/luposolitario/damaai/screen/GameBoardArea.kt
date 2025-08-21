@@ -201,7 +201,7 @@ fun GameBoardArea(
             gameState.mandatoryCapturePieces.forEach { mandatoryPos ->
                 // Controlla se c'è una pedina in questa posizione
                 val pieceExists = gameState.pieces.any { it.row == mandatoryPos.riga && it.col == mandatoryPos.colonna }
-                Log.d("GameBoardArea", "Checking mandatory capture at [${mandatoryPos.riga}, ${mandatoryPos.colonna}]. Piece exists: $pieceExists")
+                //Log.d("GameBoardArea", "Checking mandatory capture at [${mandatoryPos.riga}, ${mandatoryPos.colonna}]. Piece exists: $pieceExists")
                 if (pieceExists) {
                     val center = Offset(
                         x = mandatoryPos.colonna * squareSize + squareSize / 2,
