@@ -2,8 +2,10 @@ package io.github.luposolitario.damaai.screen
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -23,6 +25,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.luposolitario.damaai.R
 import io.github.luposolitario.damaai.game_logic.Colore
+import io.github.luposolitario.damaai.ui.theme.ButtonDarkModeBackground
+import io.github.luposolitario.damaai.ui.theme.ButtonDarkModeText
+import io.github.luposolitario.damaai.ui.theme.ButtonLightModeBackground
+import io.github.luposolitario.damaai.ui.theme.ButtonLightModeText
+import io.github.luposolitario.damaai.viewmodels.SettingsViewModel
 import kotlinx.coroutines.delay
 import kotlin.random.Random
 
@@ -41,12 +48,14 @@ fun VictoryScreen(
     playerName: String,
     opponentName: String?,      // Accetta un nome nullable
     finalComment: String?,      // Accetta un commento nullable
+    settingsViewModel: SettingsViewModel,
     onPlayAgain: () -> Unit
 ) {
     var screenVisible by remember { mutableStateOf(false) }
+    val useDarkTheme by settingsViewModel.isDarkModeEnabled.collectAsState(initial = isSystemInDarkTheme())
     val winnerText = when {
-        winner == Colore.BIANCO -> "Vince $playerName!"
-        opponentName != null -> "Vince $opponentName!"
+        winner == Colore.BIANCO -> "$playerName!"
+        opponentName != null -> "$opponentName!"
         else -> "Ha vinto l'IA!"
     }
 
@@ -114,7 +123,7 @@ fun VictoryScreen(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(8.dp)
         ) {
             Image(
                 painter = painterResource(id = R.drawable.trophy_cup),
@@ -123,11 +132,11 @@ fun VictoryScreen(
                     .size(200.dp)
                     .scale(trophyScale)
             )
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
             Text(
                 text = winnerText,
-                fontSize = 42.sp,
+                fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
                 style = MaterialTheme.typography.displaySmall,
@@ -138,7 +147,7 @@ fun VictoryScreen(
 
             // Mostra il commento solo se esiste (non è null)
             if (opponentName != null && finalComment != null) {
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     text = "\"$finalComment\"",
                     style = MaterialTheme.typography.titleMedium,
@@ -151,13 +160,24 @@ fun VictoryScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Light,
                     color = Color.White.copy(alpha = 0.8f),
-                    modifier = Modifier.align(Alignment.End).padding(end = 16.dp, top = 4.dp)
+                    modifier = Modifier.align(Alignment.End).padding(end = 8.dp, top = 2.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
-            Button(onClick = onPlayAgain) {
-                Text(text = "Gioca Ancora", fontSize = 18.sp)
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = onPlayAgain,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (useDarkTheme) ButtonDarkModeBackground else ButtonLightModeBackground,
+                    contentColor = if (useDarkTheme) ButtonDarkModeText else ButtonLightModeText
+                ),
+                modifier = Modifier.padding(top = 16.dp).width(200.dp).height(50.dp)
+            ) {
+                Text(
+                    text = "Gioca Ancora",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }

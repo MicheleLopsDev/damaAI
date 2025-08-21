@@ -19,3 +19,7 @@ val LogTextColor = Color(0xFF424242) // Un grigio scuro per i log
 val BotChatBackground = Color(0xFFE3F2FD) // Un azzurro molto chiaro per lo sfondo del bot
 val LogChatBackground = Color(0xFFF5F5F5) // Un grigio molto chiaro per lo sfondo dei log
 // ===============================================================
+val ButtonLightModeBackground = Color(0xFF000000)
+val ButtonLightModeText = Color(0xFFFFFFFF)
+val ButtonDarkModeBackground = Color(0xFFFFFFFF)
+val ButtonDarkModeText = Color(0xFF000000)

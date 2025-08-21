@@ -597,6 +597,7 @@ fun GameScreen(
                                 playerName = playerName,
                                 opponentName = aiOpponent?.name,
                                 finalComment = finalAiComment,
+                                settingsViewModel = settingsViewModel,
                                 onPlayAgain = {
                                     navController.navigate("game_screen") {
                                         popUpTo("game_screen") { inclusive = true }
