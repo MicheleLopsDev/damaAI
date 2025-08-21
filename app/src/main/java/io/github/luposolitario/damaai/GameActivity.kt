@@ -406,7 +406,7 @@ fun GameScreen(
             TopAppBar(
                 title = {
                     if (playerName.isNotBlank()) {
-                        Text("damaAI: partita di $playerName")
+                        Text("damaAI: $playerName")
                     } else {
                         Text("damaAI")
                     }
