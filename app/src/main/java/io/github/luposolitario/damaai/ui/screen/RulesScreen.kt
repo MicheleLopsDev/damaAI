@@ -70,6 +70,7 @@ private fun InfoCard(title: String, content: String) {
             Text(
                 text = content,
                 style = MaterialTheme.typography.bodyMedium
+
             )
         }
     }

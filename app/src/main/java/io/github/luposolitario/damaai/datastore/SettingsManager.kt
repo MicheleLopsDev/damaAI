@@ -6,6 +6,7 @@ import io.github.luposolitario.damaai.game_logic.Difficolta
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import androidx.core.content.edit
 
 class SettingsManager(private val context: Context) {
 
@@ -21,7 +22,12 @@ class SettingsManager(private val context: Context) {
         const val IS_MUSIC_ENABLED = "is_music_enabled"
         const val IS_TTS_ENABLED = "is_tts_enabled"
         const val PLAYER_NAME = "player_name"
+
+        const val IS_GPU_ACCELERATED = "is_gpu_accelerated"
     }
+
+    private val _isGpuAccelartedEnabledFlow = MutableStateFlow(false)
+    val isGpuAccelartedEnabledFlow: StateFlow<Boolean> = _isGpuAccelartedEnabledFlow.asStateFlow()
 
     private val _isDarkModeEnabledFlow = MutableStateFlow(false)
     val isDarkModeEnabledFlow: StateFlow<Boolean> = _isDarkModeEnabledFlow.asStateFlow()
@@ -52,6 +58,7 @@ class SettingsManager(private val context: Context) {
 
     private val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
         when (key) {
+            IS_GPU_ACCELERATED -> _isGpuAccelartedEnabledFlow.value = sharedPreferences.getBoolean(IS_GPU_ACCELERATED, false)
             IS_DARK_MODE_ENABLED -> _isDarkModeEnabledFlow.value = sharedPreferences.getBoolean(IS_DARK_MODE_ENABLED, false)
             PLAYER_TEAM_STYLE_ID -> _playerTeamStyleIdFlow.value = sharedPreferences.getString(PLAYER_TEAM_STYLE_ID, "default") ?: "default"
             BOARD_STYLE_ID -> _boardStyleIdFlow.value = sharedPreferences.getString(BOARD_STYLE_ID, "wood") ?: "wood"
@@ -66,6 +73,7 @@ class SettingsManager(private val context: Context) {
 
     init {
         // Load initial values
+        _isGpuAccelartedEnabledFlow.value = sharedPreferences.getBoolean(IS_GPU_ACCELERATED, false)
         _isDarkModeEnabledFlow.value = sharedPreferences.getBoolean(IS_DARK_MODE_ENABLED, false)
         _playerTeamStyleIdFlow.value = sharedPreferences.getString(PLAYER_TEAM_STYLE_ID, "default") ?: "default"
         _boardStyleIdFlow.value = sharedPreferences.getString(BOARD_STYLE_ID, "wood") ?: "wood"
@@ -79,39 +87,43 @@ class SettingsManager(private val context: Context) {
         sharedPreferences.registerOnSharedPreferenceChangeListener(listener)
     }
 
+    fun setGpuAccelerated(isEnabled: Boolean) {
+        sharedPreferences.edit { putBoolean(IS_GPU_ACCELERATED, isEnabled) }
+    }
+
     fun setDarkMode(isEnabled: Boolean) {
-        sharedPreferences.edit().putBoolean(IS_DARK_MODE_ENABLED, isEnabled).apply()
+        sharedPreferences.edit { putBoolean(IS_DARK_MODE_ENABLED, isEnabled) }
     }
 
     fun setPlayerTeamStyle(styleId: String) {
-        sharedPreferences.edit().putString(PLAYER_TEAM_STYLE_ID, styleId).apply()
+        sharedPreferences.edit { putString(PLAYER_TEAM_STYLE_ID, styleId) }
     }
 
     fun setBoardStyle(styleId: String) {
-        sharedPreferences.edit().putString(BOARD_STYLE_ID, styleId).apply()
+        sharedPreferences.edit { putString(BOARD_STYLE_ID, styleId) }
     }
 
     fun setDifficultyLevel(level: String) {
-        sharedPreferences.edit().putString(DIFFICULTY_LEVEL, level).apply()
+        sharedPreferences.edit { putString(DIFFICULTY_LEVEL, level) }
     }
 
     fun setMusicVolume(volume: Float) {
-        sharedPreferences.edit().putFloat(MUSIC_VOLUME, volume).apply()
+        sharedPreferences.edit { putFloat(MUSIC_VOLUME, volume) }
     }
 
     fun setClassicSongId(songId: String) {
-        sharedPreferences.edit().putString(CLASSIC_SONG_ID, songId).apply()
+        sharedPreferences.edit { putString(CLASSIC_SONG_ID, songId) }
     }
 
     fun setMusicEnabled(isEnabled: Boolean) {
-        sharedPreferences.edit().putBoolean(IS_MUSIC_ENABLED, isEnabled).apply()
+        sharedPreferences.edit { putBoolean(IS_MUSIC_ENABLED, isEnabled) }
     }
 
     fun setTtsEnabled(isEnabled: Boolean) {
-        sharedPreferences.edit().putBoolean(IS_TTS_ENABLED, isEnabled).apply()
+        sharedPreferences.edit { putBoolean(IS_TTS_ENABLED, isEnabled) }
     }
 
     fun setPlayerName(name: String) {
-        sharedPreferences.edit().putString(PLAYER_NAME, name).apply()
+        sharedPreferences.edit { putString(PLAYER_NAME, name) }
     }
 }

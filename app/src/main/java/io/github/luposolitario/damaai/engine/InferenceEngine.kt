@@ -19,7 +19,7 @@ interface InferenceEngine {
      * @param modelPath Il percorso assoluto del file del modello.
      * @throws Exception se il caricamento fallisce.
      */
-    suspend fun load(context: Context, modelPath: String)
+    suspend fun load(context: Context, modelPath: String, isGpuAccelerated: Boolean = false)
 
     /**
      * Rilascia tutte le risorse utilizzate dal motore di inferenza (modello, sessione).

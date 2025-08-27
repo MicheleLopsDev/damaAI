@@ -34,8 +34,16 @@ class SettingsViewModel(
         ttsManager.setGlobalMute(_isGlobalMuteOn.value)
     }
 
+    val isGpuAcceleratedEnabled: StateFlow<Boolean> = settingsManager.isGpuAccelartedEnabledFlow
+        .stateIn(scope = viewModelScope, started = SharingStarted.WhileSubscribed(5000), initialValue = false)
+
+    fun setGpuAccelerated(isEnabled: Boolean) {
+        settingsManager.setGpuAccelerated(isEnabled)
+    }
+
     val isDarkModeEnabled: StateFlow<Boolean> = settingsManager.isDarkModeEnabledFlow
         .stateIn(scope = viewModelScope, started = SharingStarted.WhileSubscribed(5000), initialValue = false)
+
     fun setDarkMode(isEnabled: Boolean) {
         settingsManager.setDarkMode(isEnabled)
     }

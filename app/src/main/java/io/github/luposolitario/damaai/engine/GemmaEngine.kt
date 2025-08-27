@@ -31,7 +31,7 @@ class GemmaEngine : InferenceEngine {
         private const val TOP_P = 1.0f
     }
 
-    override suspend fun load(context: Context, modelPath: String) {
+    override suspend fun load(context: Context, modelPath: String, isGpuAccelerated: Boolean) {
         if (!File(modelPath).exists()) {
             throw IllegalStateException("Modello Gemma non trovato al percorso: $modelPath")
         }else{
@@ -39,8 +39,14 @@ class GemmaEngine : InferenceEngine {
         }
 
         try {
+            var preferredBackend = LlmInference.Backend.CPU
+            if (isGpuAccelerated)
+            {
+                preferredBackend = LlmInference.Backend.GPU
+            }
             val inferenceOptions = LlmInference.LlmInferenceOptions.builder()
                 .setModelPath(modelPath)
+                .setPreferredBackend(preferredBackend)
                 .setMaxTokens(MAX_TOKENS)
                 .build()
 

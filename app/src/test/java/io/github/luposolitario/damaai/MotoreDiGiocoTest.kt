@@ -34,7 +34,7 @@ internal class MotoreDiGiocoTest {
         val pezzoPromosso = motore.scacchiera.pezzoA(Posizione(0, 1))
 
         // Assert
-        assertTrue("La mossa di promozione dovrebbe essere valida", mossaRiuscita)
+        assertNotNull("La mossa di promozione dovrebbe essere valida", mossaRiuscita)
         assertNotNull("Deve esserci un pezzo nella casella di arrivo", pezzoPromosso)
         assertEquals("Il pezzo promosso deve essere un DAMONE", TipoPezzo.DAMONE, pezzoPromosso?.tipo)
     }

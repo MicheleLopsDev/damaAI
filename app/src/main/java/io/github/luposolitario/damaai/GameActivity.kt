@@ -205,6 +205,7 @@ fun GameScreen(
     val teamStyleId by settingsViewModel.playerTeamStyleId.collectAsState()
     val isGlobalMuteOn by settingsViewModel.isGlobalMuteOn.collectAsState()
     val playerName by settingsViewModel.playerName.collectAsState()
+    val isGpuAccelerated by settingsViewModel.isGpuAcceleratedEnabled.collectAsState()
 
     var gameState by remember { mutableStateOf(GameState(pieces = emptyList())) }
     var selectedPieceCoords by remember { mutableStateOf<Posizione?>(null) }
@@ -378,7 +379,7 @@ fun GameScreen(
                 try {
                     val modelPath = ModelSettingsManager.getDmModelFilePath(context)
                     if (modelPath.isNotBlank()) {
-                        gemmaEngine.load(context, modelPath)
+                        gemmaEngine.load(context, modelPath,isGpuAccelerated)
                         // generateComment è già asincrono, non necessita di withContext
                         generateComment(aiOpponent.openingPrompt)
                     } else {

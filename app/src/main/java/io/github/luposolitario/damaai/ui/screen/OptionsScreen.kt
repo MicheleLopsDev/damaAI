@@ -168,6 +168,19 @@ fun OptionsScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     modifier = Modifier.fillMaxWidth()
                 ) {
+                    Text(text = "Accelerazione GPU")
+                    Switch(
+                        checked = isDarkMode,
+                        onCheckedChange = { settingsViewModel.setGpuAccelerated(it) })
+                }
+            }
+
+            item {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     Text(text = "Modalità Scura")
                     Switch(
                         checked = isDarkMode,
