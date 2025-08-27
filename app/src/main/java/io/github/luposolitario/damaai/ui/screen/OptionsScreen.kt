@@ -51,6 +51,7 @@ fun OptionsScreen(
     val musicVolume by settingsViewModel.musicVolume.collectAsState()
     val selectedClassicSongId by settingsViewModel.classicSongId.collectAsState()
     val isDarkMode by settingsViewModel.isDarkModeEnabled.collectAsState(initial = isSystemInDarkTheme())
+    val isGpuAccelerated by settingsViewModel.isGpuAcceleratedEnabled.collectAsState()
     val isMusicEnabled by settingsViewModel.isMusicEnabled.collectAsState()
     val isTtsEnabled by settingsViewModel.isTtsEnabled.collectAsState()
     val playerName by settingsViewModel.playerName.collectAsState()
@@ -170,7 +171,7 @@ fun OptionsScreen(
                 ) {
                     Text(text = "Accelerazione GPU")
                     Switch(
-                        checked = isDarkMode,
+                        checked = isGpuAccelerated,
                         onCheckedChange = { settingsViewModel.setGpuAccelerated(it) })
                 }
             }
